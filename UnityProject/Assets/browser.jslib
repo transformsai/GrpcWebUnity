@@ -6,5 +6,4 @@ mergeInto(LibraryManager.library, {
     stringToUTF8(objName, buffer, bufferSize);
     return buffer;
   }
-
 })
