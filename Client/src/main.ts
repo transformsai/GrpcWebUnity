@@ -1,3 +1,4 @@
+import GrpcWebUnityDelegator from "./GrpcWebUnityDelegator";
 import TestService from "./service";
 
 const service = new TestService("/api");
@@ -28,5 +29,4 @@ service.serverStream("HELLO");
 //     }
 // }
 
-// (<any>window).GrpcWebUnityDelegator = new GrpcDelegator();
-
+(<any>window).GrpcWebUnityDelegator = new GrpcWebUnityDelegator();
