@@ -1,0 +1,56 @@
+version: '3.8'
+
+networks:
+  grpcwebunity:
+    driver: bridge
+
+services:
+  server:
+    build:
+      context: ./
+      dockerfile: ./Server/Dockerfile
+      network: host
+    environment:
+      HOST: "0.0.0.0"
+      PORT: 8080
+    volumes:
+    - type: bind
+      source: ./Server
+      target: /usr/Server
+    ports:
+    - 8080:8080
+    - 9090:9090
+    networks:
+    - grpcwebunity
+
+  apiproxy:
+    build:
+      context: ./
+      dockerfile: ./ApiProxy/Dockerfile
+    environment:
+      API_HOST: server
+      API_PORT: 8080
+    volumes:
+    - ./ApiProxy/envoy.template.yaml:/etc/envoy/envoy.template.yaml
+    - ./ApiProxy/phoney-certs:/etc/envoy/phoney-certs
+    ports:
+    - "8001:80"
+    - "8443:443"
+    - "9901:9901"
+    networks:
+    - grpcwebunity
+
+  client:
+    build:
+      context: ./
+      dockerfile: ./Client/Dockerfile
+    environment:
+      NGINX_API_HOST: apiproxy
+    volumes:
+    - type: bind
+      source: ./Client/public
+      target: /data/www
+    ports:
+    - "8000:80"
+    networks:
+    - grpcwebunity
