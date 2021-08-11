@@ -29,4 +29,3 @@ service.serverStream("HELLO");
 // }
 
 // (<any>window).GrpcWebUnityDelegator = new GrpcDelegator();
-

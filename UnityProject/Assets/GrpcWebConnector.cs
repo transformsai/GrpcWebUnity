@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
 using System.Threading.Tasks;
 using Grpc.Core;
 using UnityEngine;
@@ -13,40 +14,46 @@ public class GrpcWebConnector : MonoBehaviour
     /// 
     /// Gets the gameobject name that JS is expecting to use to communicate with this script
     /// </summary>
-    [DllImport("__Internal")] private static extern string GetObjectName();
+    [DllImport("__Internal")]
+    private static extern string GetObjectName();
 
     /// <summary>
     /// Registers this unity instance to allow the code to connect
     /// This will async return in OnInstanceRegistered
     /// </summary>
-    [DllImport("__Internal")] private static extern void RegisterInstance();
+    [DllImport("__Internal")]
+    private static extern void RegisterInstance();
 
     /// <summary>
     /// Registers a channel to allow repeated calls to the same target
     /// </summary>
     /// <returns>A channel key. This channel key need to be passed for calls </returns>
-    [DllImport("__Internal")] private static extern int RegisterChannel(int instanceKey, string target);
+    [DllImport("__Internal")]
+    private static extern int RegisterChannel(int instanceKey, string target);
 
 
     /// <summary>
     /// Starts a unary request on the channel.
     /// </summary>
     /// <returns>A call key. This key be used to map responses and allow cancellations.</returns>
-    [DllImport("__Internal")] private static extern int ChannelUnaryRequest(int instanceKey, int channelKey, string base64Message);
+    [DllImport("__Internal")]
+    private static extern int ChannelUnaryRequest(int instanceKey, int channelKey, string serviceName, string methodName, string base64Message);
 
 
     /// <summary>
     /// Starts a server streaming request on the channel.
     /// </summary>
     /// <returns>A call key. This key be used to map responses and allow cancellations.</returns>
-    [DllImport("__Internal")] private static extern int ChannelServerStreamingRequest(int instanceKey, int channelKey, string base64Message);
+    [DllImport("__Internal")]
+    private static extern int ChannelServerStreamingRequest(int instanceKey, int channelKey, string serviceName, string methodName, string base64Message);
 
 
     /// <summary>
     /// Starts a server streaming request on the channel.
     /// </summary>
     /// <returns>A call key. This key be used to map responses and allow cancellations.</returns>
-    [DllImport("__Internal")] private static extern int CancelCall(int instanceKey, int channelKey, int callKey);
+    [DllImport("__Internal")]
+    private static extern int CancelCall(int instanceKey, int channelKey, int callKey);
 
 
 
@@ -159,7 +166,7 @@ public class GrpcWebConnector : MonoBehaviour
 
         public override CallInvoker CreateCallInvoker() => new WebGLCallInvoker(this);
     }
-    
+
     class WebGLCallInvoker : CallInvoker
     {
         public readonly WebGlChannel Channel;
@@ -170,22 +177,48 @@ public class GrpcWebConnector : MonoBehaviour
             Channel = webGlChannel;
         }
 
+        private TaskCompletionSource<object> UnaryResponse;
+
         public override AsyncUnaryCall<TResponse> AsyncUnaryCall<TRequest, TResponse>(Method<TRequest, TResponse> method, string host, CallOptions options, TRequest request)
         {
             var requestBytes = method.RequestMarshaller.Serializer(request);
             var base64Request = Convert.ToBase64String(requestBytes);
-            var callKey = ChannelUnaryRequest(Connector.InstanceKey, Channel.ChannelKey, base64Request);
+            var callKey = ChannelUnaryRequest(Connector.InstanceKey, Channel.ChannelKey, method.ServiceName, method.Name, base64Request);
             Debug.Log("Registered Call: " + callKey);
             var x = new { };
 
-            //var call = new AsyncUnaryCall<TResponse>(UnaryResponseTask,ResponseHeadersTask, GetStatus, GetTrailers, Dispose);
-            throw new Exception("not done");
+            var call = new AsyncUnaryCall<TResponse>(
+                UnaryResponse.Task.ContinueWith(it => (TResponse)it.Result),
+                Task.FromResult(new Metadata()),
+                () => new Status(StatusCode.OK, "We did it!"),
+                () => new Metadata(),
+                () => CancelCall(Connector.InstanceKey, Channel.ChannelKey, callKey)
+            );
+
+            return call;
         }
 
         public override AsyncServerStreamingCall<TResponse> AsyncServerStreamingCall<TRequest, TResponse>(Method<TRequest, TResponse> method, string host, CallOptions options,
             TRequest request)
         {
-            throw new Exception();
+            var requestBytes = method.RequestMarshaller.Serializer(request);
+            var base64Request = Convert.ToBase64String(requestBytes);
+            var callKey = ChannelUnaryRequest(Connector.InstanceKey, Channel.ChannelKey, method.ServiceName, method.Name, base64Request);
+            Debug.Log("Registered Call: " + callKey);
+            var x = new { };
+            var streamReader = new WebGLStreamReader<TResponse>();
+            var call = new AsyncServerStreamingCall<TResponse>(
+                streamReader,
+                Task.FromResult(new Metadata()),
+                () => new Status(StatusCode.OK, "We did it again!"),
+                () => new Metadata(),
+                () => {
+                    CancelCall(Connector.InstanceKey, Channel.ChannelKey, callKey);
+                    streamReader.SignalEnd();
+                }
+            );
+
+            return call;
         }
 
         public override TResponse BlockingUnaryCall<TRequest, TResponse>(Method<TRequest, TResponse> method, string host, CallOptions options, TRequest request) =>
@@ -196,6 +229,55 @@ public class GrpcWebConnector : MonoBehaviour
 
         public override AsyncDuplexStreamingCall<TRequest, TResponse> AsyncDuplexStreamingCall<TRequest, TResponse>(Method<TRequest, TResponse> method, string host, CallOptions options) =>
             throw new NotImplementedException("WebGL does not allow for client streaming.");
-    }
 
+        class WebGLStreamReader<T> : IAsyncStreamReader<T>
+        {
+            public T Current { get; set; }
+
+            private Queue<T> _queue = new Queue<T>();
+
+            private TaskCompletionSource<object> _updated = new TaskCompletionSource<object>();
+
+            public async Task<bool> MoveNext(CancellationToken cancellationToken)
+            {
+                cancellationToken.Register(() => _updated.SetCanceled());
+                while (true) {
+                    if (_queue.Count > 0)
+                    {
+                        T item = _queue.Dequeue();
+                        Current = item;
+                        return true;
+                    }
+                    else
+                    {
+                        try
+                        {
+                            // TODO: RESPECT THE AUTHORITY OF THE CANCELLATION TOKEN
+                            await _updated.Task;                            
+                        }
+                        catch (TaskCanceledException)
+                        {
+                            return false;
+                        }
+                        finally {
+                            _updated = new TaskCompletionSource<object>();
+                        }
+                    }
+                }                               
+            }
+
+            public void SignalEnd() {
+                _updated.SetCanceled();
+            }
+
+            public void SignalError(Exception e) {
+                _updated.SetException(e);
+            }
+
+            public void AddItem(T item) {
+                _queue.Enqueue(item);
+                _updated.SetResult(null);
+            }
+        }
+    }    
 }
