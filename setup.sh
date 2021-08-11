@@ -20,9 +20,9 @@ function setup_node_env() {
     rootName=$1 # string
     cd $rootName
     npm install
-    npm run build:dev
+    npm run build
     cd ..
 }
 
 setup_python_env "Server"
-# setup_node_env "DirectorsChair"
+setup_node_env "Client"

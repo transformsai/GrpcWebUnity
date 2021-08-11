@@ -6,7 +6,8 @@
   "scripts": {
     "cli": "ts-node src/cli.ts",
     "lint": "eslint src/ --ext .js,.jsx,.ts,.tsx",
-    "build": "npx esbuild src/main.ts --bundle --sourcemap=external --outfile=dist/esbuild/browser.js",
+    "compile-protos": "node ./compile-protos.js",
+    "build": "npm run compile-protos && npx esbuild src/main.ts --bundle --sourcemap=external --outfile=dist/esbuild/browser.js",
     "clean": "rm -rf dist build",
     "ts-node": "ts-node"
   },
@@ -14,8 +15,14 @@
   "license": "ISC",
   "dependencies": {
     "@protobuf-ts/grpcweb-transport": "^2.0.1",
+    "@protobuf-ts/plugin": "^2.0.1",
     "@types/emscripten": "^1.39.5",
     "esbuild": "^0.12.19",
     "typescript": "^4.3.5"
+  },
+  "devDependencies": {
+    "@protobuf-ts/protoc": "^2.0.1",
+    "@types/google-protobuf": "^3.15.4",
+    "glob": "^7.1.7"
   }
 }

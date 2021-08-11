@@ -1,24 +1,32 @@
-import { GrpcWebFetchTransport } from "@protobuf-ts/grpcweb-transport"
+import TestService from "./service";
 
-class GrpcDelegator {
+const service = new TestService("/api");
 
-    private static counter: number = 0;
-    private static channelMap = new Map<number,GrpcDelegatorChannel>();
+service.unary("HELLO");
+service.serverStream("HELLO");
 
-    registerUnityInstance()
+// import { GrpcWebFetchTransport } from "@protobuf-ts/grpcweb-transport"
 
-    // makeChannel(target: string): number {
-    //     var key = GrpcDelegator.counter++;
-    //     GrpcDelegator.channelMap.
-    // }
-}
+// class GrpcDelegator {
 
-class GrpcDelegatorChannel {
-    channel: GrpcWebFetchTransport;
+//     private static counter: number = 0;
+//     private static channelMap = new Map<number,GrpcDelegatorChannel>();
 
-    constructor(target: string, GrpcDelegator) {
-        this.channel = new GrpcWebFetchTransport({ baseUrl: target });
-    }
-}
+//     registerUnityInstance()
 
-(<any>window).GrpcWebUnityDelegator = new GrpcDelegator();
+//     // makeChannel(target: string): number {
+//     //     var key = GrpcDelegator.counter++;
+//     //     GrpcDelegator.channelMap.
+//     // }
+// }
+
+// class GrpcDelegatorChannel {
+//     channel: GrpcWebFetchTransport;
+
+//     constructor(target: string, GrpcDelegator) {
+//         this.channel = new GrpcWebFetchTransport({ baseUrl: target });
+//     }
+// }
+
+// (<any>window).GrpcWebUnityDelegator = new GrpcDelegator();
+

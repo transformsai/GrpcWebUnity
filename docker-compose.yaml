@@ -48,7 +48,7 @@ services:
       NGINX_API_HOST: apiproxy
     volumes:
     - type: bind
-      source: ./Client/public
+      source: ./Client
       target: /data/www
     ports:
     - "8000:80"
