@@ -1,0 +1,17 @@
+syntax = "proto3";
+
+package ai.transforms.grpcwebunity;
+
+service TestService {
+    rpc Unary(Request) returns (Response);
+
+    rpc ServerStream(Request) returns (stream Response);
+}
+
+message Request {
+    string data = 1;
+}
+
+message Response {
+    string data = 1;
+}

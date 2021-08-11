@@ -1,0 +1,15 @@
+{
+  "typeCheckingMode": "strict",
+  "pythonVersion": "3.7",
+  "useLibraryCodeForTypes": true,
+  "reportUnknownMemberType": "none",
+  "reportMissingTypeStubs": "none",
+  "venvPath": ".",
+  "venv": "venv",  
+  "exclude": [
+    "venv",
+  ],
+  "executionEnvironments": [
+    {"root": "src"},
+  ]
+}
