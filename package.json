@@ -1,0 +1,14 @@
+{
+  "name": "grpcwebunity",
+  "version": "1.0.0",
+  "description": "Allows Unity Grpc to connect in a WebGL build",
+  "main": "index.ts",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "hello@mhdante.com",
+  "license": "ISC",
+  "dependencies": {
+    "typescript": "^4.3.5"
+  }
+}
