@@ -2,7 +2,7 @@ import { encode, decode } from "base64-arraybuffer";
 import { GrpcWebFetchTransport } from "@protobuf-ts/grpcweb-transport";
 import { Instance } from "./Instance";
 import { UnityProtoMessage } from "./UnityProtoMessage";
-import { MethodInfo, RpcError } from "@protobuf-ts/runtime-rpc";
+import { MethodInfo, RpcError, RpcOptions } from "@protobuf-ts/runtime-rpc";
 import { DecodeMetadata, EncodeMetadata, toBase64 } from "./Utils";
 import { Call } from "./Call";
 
@@ -25,11 +25,15 @@ export class Channel {
     const requestMethod = makeUnityMethodInfo(serviceName, methodName, GrpcRequestType.Unary);
     const request = UnityProtoMessage.fromBinary(new Uint8Array(decode(base64Message)));
     const aborter = new AbortController();
-    const call = this.transport.unary(requestMethod, request, {
+    console.log("uh?");
+    debugger;
+    let options : RpcOptions = {
       abort: aborter.signal,
       meta: DecodeMetadata(headers),
       timeout: deadlineTimestampSecs ? new Date(deadlineTimestampSecs * 1000) : undefined
-    });
+    };
+    options = this.transport.mergeOptions(options);
+    const call = this.transport.unary(requestMethod, request, options);
 
     const callObj = new Call(this, aborter, call);
     const callKey = Channel.callCounter++;
@@ -59,11 +63,13 @@ export class Channel {
     const requestMethod = makeUnityMethodInfo(serviceName, methodName, GrpcRequestType.ServerStreaming);
     const request = UnityProtoMessage.fromBinary(new Uint8Array(decode(base64Message)));
     const aborter = new AbortController();
-    const call = this.transport.serverStreaming(requestMethod, request, {
+    let options : RpcOptions = {
       abort: aborter.signal,
       meta: DecodeMetadata(headers),
       timeout: deadlineTimestampSecs ? new Date(deadlineTimestampSecs * 1000) : undefined
-    });
+    };
+    options = this.transport.mergeOptions(options);
+    const call = this.transport.serverStreaming(requestMethod, request, options);
     const callObj = new Call(this, aborter, call);
     const callKey = Channel.callCounter++;
     this.callMap.set(callKey, callObj);

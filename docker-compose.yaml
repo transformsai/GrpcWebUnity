@@ -40,17 +40,17 @@ services:
     networks:
     - grpcwebunity
 
-  client:
-    build:
-      context: ./
-      dockerfile: ./Client/Dockerfile
-    environment:
-      NGINX_API_HOST: apiproxy
-    volumes:
-    - type: bind
-      source: ./Client
-      target: /data/www
-    ports:
-    - "8000:80"
-    networks:
-    - grpcwebunity
+  # client:
+  #   build:
+  #     context: ./
+  #     dockerfile: ./Client/Dockerfile
+  #   environment:
+  #     NGINX_API_HOST: apiproxy
+  #   volumes:
+  #   - type: bind
+  #     source: ./Client
+  #     target: /data/www
+  #   ports:
+  #   - "8000:80"
+  #   networks:
+  #   - grpcwebunity

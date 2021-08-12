@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Threading.Tasks;
+using Google.Protobuf;
 using Grpc.Core;
 using UnityEngine;
 
@@ -29,28 +30,41 @@ internal class WebGlChannel : ChannelBase
             Channel = webGlChannel;
         }
 
-        private TaskCompletionSource<object> UnaryResponse;
-        private AsyncStreamReader streamReader;
-        private Func<byte[], object> Deserializer;
+        private TaskCompletionSource<IMessage> _unaryResponse;
+        private AsyncStreamReader _streamReader;
+        private Func<byte[], IMessage> _deserializer;
 
-        private TaskCompletionSource<Metadata> Headers = new TaskCompletionSource<Metadata>();
+        private TaskCompletionSource<Metadata> _headers = new TaskCompletionSource<Metadata>();
         
         public override AsyncUnaryCall<TResponse> AsyncUnaryCall<TRequest, TResponse>(Method<TRequest, TResponse> method, string host, CallOptions options, TRequest request)
         {
-            var requestBytes = method.RequestMarshaller.Serializer(request);
-            Deserializer = method.RequestMarshaller.Deserializer;
+            Debug.Log("EARARAR");
+            if (!(request is IMessage reqMessage))
+            {
+                throw new Exception("Only IMessage Supported");
+            }
+
+            var requestBytes = reqMessage.ToByteArray();
+
+            _deserializer = bytes => {
+                var responseInstance = (IMessage)Activator.CreateInstance<TResponse>();
+                responseInstance.MergeFrom(bytes);
+                return responseInstance;
+            };
+
             var base64Request = Convert.ToBase64String(requestBytes);
             var headers = options.Headers?.EncodeMetadata();
             var deadline = options.Deadline.ToUnixTimeSeconds();
             var callKey = GrpcWebApi.UnaryRequest(Connector.InstanceKey, Channel.ChannelKey, method.ServiceName, method.Name, headers, base64Request, deadline);
 
+            Debug.Log("rararara");
             Channel.Calls.Add(callKey, this);
             Debug.Log("Registered Unary Call: " + callKey);
 
-            UnaryResponse = new TaskCompletionSource<object>();
+            _unaryResponse = new TaskCompletionSource<IMessage>();
             var call = new AsyncUnaryCall<TResponse>(
-                UnaryResponse.Task.ContinueWith(it => (TResponse)it.Result),
-                Headers.Task,
+                _unaryResponse.Task.ContinueWith(it => (TResponse)it.Result),
+                _headers.Task,
                 () => Status,
                 () => null,
                 () => GrpcWebApi.CancelCall(Connector.InstanceKey, Channel.ChannelKey, callKey)
@@ -76,17 +90,17 @@ internal class WebGlChannel : ChannelBase
 
 
             var reader = new AsyncStreamReader<TResponse>();
-            streamReader = reader;
+            _streamReader = reader;
 
             var call = new AsyncServerStreamingCall<TResponse>(
                 reader,
-                Headers.Task,
+                _headers.Task,
                 () => Status,
                 () => null,
                 () =>
                 {
                     GrpcWebApi.CancelCall(Connector.InstanceKey, Channel.ChannelKey, callKey);
-                    streamReader.SignalEnd();
+                    _streamReader.SignalEnd();
                 }
             );
             options.CancellationToken.Register(call.Dispose);
@@ -104,32 +118,32 @@ internal class WebGlChannel : ChannelBase
 
         public void ReportUnaryResponse(byte[] messageEncoded)
         {
-            var obj = Deserializer(messageEncoded);
-            UnaryResponse.SetResult(obj);
+            var obj = _deserializer(messageEncoded);
+            _unaryResponse.SetResult(obj);
         }
 
         public void ReportHeaders(Metadata headers)
         {
-            Headers.SetResult(headers);
+            _headers.SetResult(headers);
         }
 
         public void ReportServerStreamingResponse(byte[] messageEncoded)
         {
-            var obj = Deserializer(messageEncoded);
-            streamReader.AddItem(obj);
+            var obj = _deserializer(messageEncoded);
+            _streamReader.AddItem(obj);
         }
 
         public void ReportCompleted()
         {
-            streamReader.SignalEnd();
+            _streamReader.SignalEnd();
         }
 
         public void ReportError(string errorMessage)
         {
             var exception = new Exception(errorMessage);
-            streamReader?.SignalError(exception);
-            UnaryResponse?.SetException(exception);
-            Headers.SetException(exception);
+            _streamReader?.SignalError(exception);
+            _unaryResponse?.SetException(exception);
+            _headers.SetException(exception);
         }
 
         public void ReportStatus(Status status)

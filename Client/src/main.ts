@@ -1,10 +1,10 @@
 import Delegator from "./GrpcWebConnector/Delegator";
-import TestService from "./service";
+// import TestService from "./service";
 
-const service = new TestService(`http://${window.location.hostname}:${8080}/api`);
+// const service = new TestService(`http://${window.location.hostname}:${8001}`);
 
-service.unary("HELLO");
-service.serverStream("HELLO");
+// service.unary("HELLO");
+// service.serverStream("HELLO");
 
 
 (<any>window).GrpcWebUnityDelegator = new Delegator();

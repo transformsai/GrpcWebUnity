@@ -7,7 +7,14 @@ export default class Delegator {
   private static instanceCounter: number = 0;
   private instanceMap = new Map<number, Instance>();
 
-  registerUnityInstance(unityCaller: UnityPlayer, objectName: string) {
+  findInstance(instanceKey: number): Instance {
+    const instance = this.instanceMap.get(instanceKey);
+    if (!instance) throw new Error(`Invalid instanceKey: ${instanceKey}`);
+    return instance;
+  }
+
+
+  RegisterInstance(unityCaller: UnityPlayer, objectName: string) {
     const handler: ProxyHandler<Connector> = {
       get(target, propName, _receiver) {
         if (propName == "Module") return target.Module;
@@ -25,12 +32,12 @@ export default class Delegator {
     connector.OnInstanceRegistered(instance.instanceKey);
   }
 
-  registerChannel(instanceKey: number, address: string): number {
+  RegisterChannel(instanceKey: number, address: string): number {
     const instance = this.findInstance(instanceKey);
     return instance.makeChannel(address);
   }
 
-  channelUnaryRequest(
+  UnaryRequest(
     instanceKey: number,
     channelKey: number,
     serviceName: string,
@@ -39,29 +46,38 @@ export default class Delegator {
     base64Message:string,
     deadlineTimestampSecs:number,
   ): number {
+    debugger;
+    console.log("weas?");
+
     const instance = this.findInstance(instanceKey);
     const channel = instance.findChannel(channelKey);
     return channel.unaryRequest(serviceName, methodName, headers, base64Message, deadlineTimestampSecs);
   }
 
-  channelServerStreamingRequest(
+  ServerStreamingRequest(
     instanceKey: number,
     channelKey: number,
     serviceName: string,
     methodName: string,
     headers:string,
     base64Message:string,
-    deadlineTimestampSecs:number,
+    deadlineTimestampSecs:number
   ): number {
     const instance = this.findInstance(instanceKey);
     const channel = instance.findChannel(channelKey);
     return channel.serverStreamRequest(serviceName, methodName, headers, base64Message, deadlineTimestampSecs);
   }
-
-  findInstance(instanceKey: number): Instance {
-    const instance = this.instanceMap.get(instanceKey);
-    if (!instance) throw new Error(`Invalid instanceKey: ${instanceKey}`);
-    return instance;
+  
+  CancelCall(
+    instanceKey: number,
+    channelKey: number,
+    callKey: number
+  ){
+    const instance = this.findInstance(instanceKey);
+    const channel = instance.findChannel(channelKey);
+    const call = channel.findCall(callKey);
+    call.cancel();
   }
+
 }
 

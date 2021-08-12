@@ -14,29 +14,33 @@ internal static class GrpcWebApi
     /// Registers a channel to allow repeated calls to the same target
     /// </summary>
     /// <returns>A channel key. This channel key need to be passed for calls </returns>
-    internal static int RegisterChannel(int instanceKey, string target) => 0;
-    
+    [DllImport("__Internal")]
+    internal static extern int RegisterChannel(int instanceKey, string target);
+
     /// <summary>
     /// Starts a unary request on the channel.
     /// </summary>
     /// <returns>A call key. This key be used to map responses and allow cancellations.</returns>
-    internal static int UnaryRequest( int instanceKey, int channelKey,
-        string serviceName, string methodName, string headers, string base64Message, long deadlineTimestampSecs) => 0;
+    [DllImport("__Internal")]
+    internal static extern int UnaryRequest(int instanceKey, int channelKey,
+        string serviceName, string methodName, string headers, string base64Message, long deadlineTimestampSecs);
 
 
     /// <summary>
     /// Starts a server streaming request on the channel.
     /// </summary>
     /// <returns>A call key. This key be used to map responses and allow cancellations.</returns>
-    internal static  int ServerStreamingRequest(int instanceKey, int channelKey,
-        string serviceName, string methodName, string headers, string base64Message, long deadlineTimestampSecs) => 0;
+    [DllImport("__Internal")]
+    internal static extern int ServerStreamingRequest(int instanceKey, int channelKey,
+        string serviceName, string methodName, string headers, string base64Message, long deadlineTimestampSecs);
 
 
     /// <summary>
     /// Starts a server streaming request on the channel.
     /// </summary>
     /// <returns>A call key. This key be used to map responses and allow cancellations.</returns>
-    internal static void CancelCall(int instanceKey, int channelKey, int callKey) {}
+    [DllImport("__Internal")]
+    internal static extern void CancelCall(int instanceKey, int channelKey, int callKey);
 
 
 }

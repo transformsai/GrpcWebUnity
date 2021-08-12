@@ -10,7 +10,7 @@ public class GrpcWebConnector : MonoBehaviour
 
     internal int InstanceKey { get; private set; } = -1;
     private readonly TaskCompletionSource<int> _initializationTask = new TaskCompletionSource<int>();
-    private bool IsInitialized => InstanceKey < 0;
+    private bool IsInitialized => InstanceKey >= 0;
     public Task WaitForInitialization => _initializationTask.Task;
     private readonly Dictionary<int, WebGlChannel> _channelMap = new Dictionary<int, WebGlChannel>();
     private static GrpcWebConnector _instance;
@@ -45,6 +45,11 @@ public class GrpcWebConnector : MonoBehaviour
 
     }
 
+    public async Task<ChannelBase> MakeChannelAsync(string target)
+    {
+        await WaitForInitialization;
+        return MakeChannel(target);
+    }
     public ChannelBase MakeChannel(string target)
     {
         if (!IsInitialized)
@@ -122,8 +127,8 @@ public class GrpcWebConnector : MonoBehaviour
     internal void OnInstanceRegistered(int instanceKey)
     {
         InstanceKey = instanceKey;
-        _initializationTask.SetResult(instanceKey);
         Debug.Log("Registered Instance: " + InstanceKey);
+        _initializationTask.SetResult(instanceKey);
     }
 
 

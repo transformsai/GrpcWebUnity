@@ -3,7 +3,7 @@ mergeInto(LibraryManager.library, {
     const objName = "GrpcWebUnityConnector";
 
     const register = function () {
-      window.GrpcWebUnityDelegator.registerUnityInstance(Module, objName);
+      window.GrpcWebUnityDelegator.RegisterInstance(Module, objName);
     };
 
     if (window.GrpcWebUnityDelegator) {
@@ -26,15 +26,36 @@ mergeInto(LibraryManager.library, {
     return buffer;
   },
   RegisterChannel: function (instanceKey, address) {
-    return window.GrpcWebUnityDelegator.registerChannel(instanceKey, address);
+    return window.GrpcWebUnityDelegator.RegisterChannel(
+      instanceKey, 
+      Pointer_stringify(address)
+      );
   },
   UnaryRequest: function (instanceKey, channelKey, serviceName, methodName, headers, base64Message, deadlineTimestampSecs) {
-    return window.GrpcWebUnityDelegator.UnaryRequest(instanceKey, channelKey, serviceName, methodName, headers, base64Message, deadlineTimestampSecs);
+    console.log("alskdjen");
+    return window.GrpcWebUnityDelegator.UnaryRequest(
+      instanceKey, 
+      channelKey, 
+      Pointer_stringify(serviceName), 
+      Pointer_stringify(methodName), 
+      Pointer_stringify(headers), 
+      Pointer_stringify(base64Message), 
+      deadlineTimestampSecs);
   },
   ServerStreamingRequest: function (instanceKey, channelKey, serviceName, methodName, headers, base64Message, deadlineTimestampSecs) {
-    return window.GrpcWebUnityDelegator.ServerStreamingRequest(instanceKey, channelKey, serviceName, methodName, headers, base64Message, deadlineTimestampSecs);
+    return window.GrpcWebUnityDelegator.ServerStreamingRequest(
+      instanceKey, 
+      channelKey, 
+      Pointer_stringify(serviceName), 
+      Pointer_stringify(methodName), 
+      Pointer_stringify(headers), 
+      Pointer_stringify(base64Message), 
+      deadlineTimestampSecs);
   },
   CancelCall: function (instanceKey, channelKey, callKey) {
-    return window.GrpcWebUnityDelegator.CancelCall(instanceKey, channelKey, callKey);
+    window.GrpcWebUnityDelegator.CancelCall(
+      instanceKey, 
+      channelKey, 
+      callKey);
    },
 });
