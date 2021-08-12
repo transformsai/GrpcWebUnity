@@ -4,9 +4,9 @@ const glob = require("glob");
 const { exec } = require("child_process");
 
 const PROTO_DIR = path.join("..", "Proto");
-const PROTO_DIR_GLOB = path.join(PROTO_DIR, "**", "*.proto");
 const PROTO_DIR_ABS = path.resolve(PROTO_DIR);
 const PROTO_NAMESPACE = "grpcwebunity";
+const PROTO_DIR_GLOB = path.join(PROTO_DIR, PROTO_NAMESPACE, "**", "*.proto");
 const PROTO_OUTPUT_DIR = path.join(".", "src", "generated");
 const PROTO_OUTPUT_DIR_GLOB = path.join(PROTO_OUTPUT_DIR, "**", "*");
 
@@ -14,9 +14,6 @@ const globOptions = {
   absolute: true,
 };
 
-/**
- * @param {string[]} files Absolute glob paths to .proto files
- */
 function compileProtos() {
   const files = glob.sync(PROTO_DIR_GLOB, globOptions)
   console.info("Compiling Protos:", files);

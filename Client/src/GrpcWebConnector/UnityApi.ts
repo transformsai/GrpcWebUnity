@@ -1,4 +1,4 @@
-interface UnityInstance {
+interface UnityPlayer {
   SetFullscreen(fullscreen: 0 | 1): void;
   SendMessage(
     objectName: string,
@@ -24,7 +24,7 @@ interface UnityCreator {
     canvas: HTMLCanvasElement,
     config: any,
     progressCallback: (progress: number) => void
-  ): Promise<UnityInstance>;
+  ): Promise<UnityPlayer>;
 }
 
 function GetUnityLoader() {
@@ -37,3 +37,5 @@ function GetUnityLoader() {
     }
   };
 }
+
+

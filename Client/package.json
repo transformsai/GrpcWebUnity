@@ -7,9 +7,11 @@
     "cli": "ts-node src/cli.ts",
     "lint": "eslint src/ --ext .js,.jsx,.ts,.tsx",
     "compile-protos": "node ./compile-protos.js",
-    "build": "npm run compile-protos && npx esbuild src/main.ts --bundle --sourcemap=external --outfile=dist/esbuild/browser.js",
+    "build": "npx esbuild src/main.ts --bundle --sourcemap=external --outfile=dist/esbuild/bundle.js",
+    "build-unity": "npx esbuild src/main.ts --bundle --sourcemap=external --outfile=../UnityProject/Build/WebGL/bundle.js",
     "clean": "rm -rf dist build",
-    "ts-node": "ts-node"
+    "ts-node": "ts-node",
+    "postinstall": "npm run compile-protos"
   },
   "author": "hello@mhdante.com",
   "license": "ISC",
