@@ -1,10 +1,18 @@
 import { encode, decode } from "base64-arraybuffer";
-import { GrpcWebFetchTransport } from "@protobuf-ts/grpcweb-transport";
+import { GrpcStatusCode, GrpcWebFetchTransport } from "@protobuf-ts/grpcweb-transport";
 import { Instance } from "./Instance";
 import { UnityProtoMessage } from "./UnityProtoMessage";
-import { MethodInfo, RpcError, RpcOptions } from "@protobuf-ts/runtime-rpc";
+import { MethodInfo, RpcError, RpcOptions, RpcMetadata, RpcStatus } from "@protobuf-ts/runtime-rpc";
 import { DecodeMetadata, EncodeMetadata, toBase64 } from "./Utils";
 import { Call } from "./Call";
+
+
+
+type GrpcCodeString = keyof typeof GrpcStatusCode;
+
+function CodeNum(str: String) {
+  return GrpcStatusCode[<GrpcCodeString>str];
+}
 
 export class Channel {
   static callCounter: number = 0;
@@ -21,13 +29,26 @@ export class Channel {
     this.instance = instance;
   }
 
+  private reportFinishedCall(callKey: number, status: RpcStatus, trailers: RpcMetadata, message?: UnityProtoMessage) {
+    let params = [
+      this.channelKey,
+      callKey,
+      CodeNum(status.code),
+      toBase64(status.detail),
+      toBase64(EncodeMetadata(trailers))
+    ];
+    if(message) params.push(encode(message.bytes.buffer))
+    
+    this.instance.unityCaller.OnCallCompletion(
+      params.join("|")
+    )
+  }
+
   unaryRequest(serviceName: string, methodName: string, headers: string, base64Message: string, deadlineTimestampSecs: number): number {
     const requestMethod = makeUnityMethodInfo(serviceName, methodName, GrpcRequestType.Unary);
     const request = UnityProtoMessage.fromBinary(new Uint8Array(decode(base64Message)));
     const aborter = new AbortController();
-    console.log("uh?");
-    debugger;
-    let options : RpcOptions = {
+    let options: RpcOptions = {
       abort: aborter.signal,
       meta: DecodeMetadata(headers),
       timeout: deadlineTimestampSecs ? new Date(deadlineTimestampSecs * 1000) : undefined
@@ -40,30 +61,26 @@ export class Channel {
     this.callMap.set(callKey, callObj);
 
     call.headers.then(it => this.instance.unityCaller.OnHeaders(
-      [this.channelKey, "|", callKey, "\n", EncodeMetadata(it)].join()
+      [this.channelKey, "|", callKey, "\n", EncodeMetadata(it)].join("")
     ))
 
-    call.status.then(it => this.instance.unityCaller.OnStatus(
-      [this.channelKey, "|", callKey, "|", it.code, "\n", it.detail].join()
-    ), (err: RpcError) => this.instance.unityCaller.OnStatus(
-      [this.channelKey, "|", callKey, "|", err.code, "\n", err.message].join()
-    ));
-
-    call.response.then((value) =>
-      this.instance.unityCaller.OnUnaryResponse(
-        [this.channelKey, callKey, encode(value.bytes.buffer)].join("|"))
-      , error => this.instance.unityCaller.OnCallError(
-        [this.channelKey, callKey, toBase64("" + error)].join("|")));
-
+    call.then(
+      it => this.reportFinishedCall(callKey, it.status, it.trailers,it.response),
+      it => it instanceof RpcError ?
+        this.reportFinishedCall(callKey, {code: it.code, detail:it.message}, it.meta) :
+        this.reportFinishedCall(callKey, {code: GrpcStatusCode[GrpcStatusCode.INTERNAL], detail:"Internal error in Channel.ts" + it.message}, it.meta)
+      );
 
     return callKey;
   }
+
+
 
   serverStreamRequest(serviceName: string, methodName: string, headers: string, base64Message: string, deadlineTimestampSecs: number): number {
     const requestMethod = makeUnityMethodInfo(serviceName, methodName, GrpcRequestType.ServerStreaming);
     const request = UnityProtoMessage.fromBinary(new Uint8Array(decode(base64Message)));
     const aborter = new AbortController();
-    let options : RpcOptions = {
+    let options: RpcOptions = {
       abort: aborter.signal,
       meta: DecodeMetadata(headers),
       timeout: deadlineTimestampSecs ? new Date(deadlineTimestampSecs * 1000) : undefined
@@ -73,38 +90,24 @@ export class Channel {
     const callObj = new Call(this, aborter, call);
     const callKey = Channel.callCounter++;
     this.callMap.set(callKey, callObj);
-    
+
     call.headers.then(it => this.instance.unityCaller.OnHeaders(
-      [this.channelKey, "|", callKey, "\n", EncodeMetadata(it)].join()
+      [this.channelKey, "|", callKey, "\n", EncodeMetadata(it)].join("")
     ))
 
-    call.status.then(it => this.instance.unityCaller.OnStatus(
-      [this.channelKey, "|", callKey, "|", it.code, "\n", it.detail].join()
-    ), (err: RpcError) => this.instance.unityCaller.OnStatus(
-      [this.channelKey, "|", callKey, "|", err.code, "\n", err.message].join()
-    ));
-
-    call.responses.onNext((message, error, isComplete) => {
-      if (message) {
-        const encodedMessage = encode(message.bytes.buffer);
-        this.instance.unityCaller.OnServerStreamingResponse(
-          [this.channelKey, callKey, encodedMessage].join("|"));
-        return;
-      }
-
-      if (error) {
-        const encodedErrorMessage = toBase64(error.message);
-        this.instance.unityCaller.OnCallError(
-          [this.channelKey, callKey, encodedErrorMessage].join("|"));
-        return
-      }
-
-      if (isComplete) {
-        this.instance.unityCaller.OnServerStreamingComplete(
-          [this.channelKey, callKey].join("|"));
-        return
-      }
+    call.responses.onMessage((message) => {
+      const encodedMessage = encode(message.bytes.buffer);
+      this.instance.unityCaller.OnServerStreamingResponse(
+        [this.channelKey, callKey, encodedMessage].join("|"));
+      return;
     });
+
+    call.then(
+      it => this.reportFinishedCall(callKey, it.status, it.trailers),
+      it => it instanceof RpcError ?
+        this.reportFinishedCall(callKey, {code: it.code, detail:it.message}, it.meta) :
+        this.reportFinishedCall(callKey, {code: GrpcStatusCode[GrpcStatusCode.INTERNAL], detail:"Internal error in Channel.ts" + it.message}, it.meta)
+      );
     return callKey;
   }
 

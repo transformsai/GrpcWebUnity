@@ -32,7 +32,6 @@ mergeInto(LibraryManager.library, {
       );
   },
   UnaryRequest: function (instanceKey, channelKey, serviceName, methodName, headers, base64Message, deadlineTimestampSecs) {
-    console.log("alskdjen");
     return window.GrpcWebUnityDelegator.UnaryRequest(
       instanceKey, 
       channelKey, 

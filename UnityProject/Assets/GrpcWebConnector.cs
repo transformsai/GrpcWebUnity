@@ -63,43 +63,38 @@ public class GrpcWebConnector : MonoBehaviour
     }
 
 
-    // Receives a pipe-delimited Unary response in the format "channelKey|callKey|base64EncodedMessage"
-    internal void OnUnaryResponse(string channelCallMessage)
-    {
-        ParseParams(channelCallMessage, out _, out var call, out var payload);
-        var messageEncoded = Convert.FromBase64String(payload);
-        call.ReportUnaryResponse(messageEncoded);
-    }
-
     // Receives a ServerStreamingResponse Unary response in the format "channelKey|callKey|base64EncodedMessage"
     internal void OnServerStreamingResponse(string channelCallMessage)
     {
-        ParseParams(channelCallMessage, out _, out var call, out var payload);
-        var messageEncoded = Convert.FromBase64String(payload);
+        Debug.Log("OnServerStreamingResponse: " + channelCallMessage);
+        ParseParams(channelCallMessage, out _, out var call, out var parameters);
+        var messageEncoded = Convert.FromBase64String(parameters[2]);
         call.ReportServerStreamingResponse(messageEncoded);
     }
 
-    // Signals call completion in the format "channelKey|callKey"
-    internal void OnServerStreamingComplete(string channelCall)
+    // Receives a pipe-delimited Unary response in the format "channelKey|callKey|statusCode|statusDetail|trailingMetadata|base64EncodedMessage"
+    // The final parameter may be ommited if the call is not expected to return a final message.
+    internal void OnCallCompletion(string channelCallStatusDetailMessage)
     {
-        ParseParams(channelCall, out _, out var call, out _);
-        call.ReportCompleted();
-    }
 
-    // Signals an error occurred in a call in the format "channelKey|callKey|ErrorString"
-    // The error string is base64 encoded
-    internal void OnCallError(string channelCallError)
-    {
-        ParseParams(channelCallError, out _, out var call, out var error);
-        var errorDecoded = Utils.FromBase64Utf8(error);
-        call.ReportError(errorDecoded);
-    }
+        Debug.Log("OnCallCompletion: " + channelCallStatusDetailMessage);
+        ParseParams(channelCallStatusDetailMessage, out _, out var call, out var parameters);
+        var code = (StatusCode)int.Parse(parameters[2]);
+        var detail = Utils.FromBase64Utf8(parameters[3]);
+        var trailersString = Utils.FromBase64Utf8(parameters[4]);
+        var messageEncoded = parameters.Length < 6 ? null : Convert.FromBase64String(parameters[5]);
+        var status = new Status(code, detail);
+        var trailers = Utils.DecodeMetadata(new StringReader(trailersString));
+        call.ReportCompleted(status,trailers,messageEncoded);
 
+    }
+    
     // Takes multi-line Metadata. The first line is expected to have the format `channelKey|callKey`
     // followed by 0 or more lines with the format `base64EncodedKey|base64EncodedValue`. Each key-value pair is of the format.
     // If the key ends in `-bin`, it is expected to be a binary value. 
     internal void OnHeaders(string channelCallMetadata)
     {
+        Debug.Log("OnHeaders: " + channelCallMetadata);
         using var reader = new StringReader(channelCallMetadata);
         var first = reader.ReadLine();
         if (first == null) throw new Exception("Invalid Headers");
@@ -108,37 +103,23 @@ public class GrpcWebConnector : MonoBehaviour
         call.ReportHeaders(headers);
     }
 
-    // Reports the status of a call. Multi-line. First line is "channelKey|callKey|StatusCode"
-    // Message follows in rest of line.
-    internal void OnStatus(string channelCallStatus)
-    {
-        using var reader = new StringReader(channelCallStatus);
-        var first = reader.ReadLine();
-        if (first == null) throw new Exception("Invalid Status");
-        ParseParams(first, out _, out var call, out var statusCode);
-        var intCode = int.Parse(statusCode);
-
-        var message = reader.ReadToEnd();
-        var status = new Status((StatusCode) intCode, message);
-        call.ReportStatus(status);
-    }
 
     // Signals that the connector has been initialized
     internal void OnInstanceRegistered(int instanceKey)
     {
+        Debug.Log("OnInstanceRegistered: " + instanceKey);
         InstanceKey = instanceKey;
         Debug.Log("Registered Instance: " + InstanceKey);
         _initializationTask.SetResult(instanceKey);
     }
 
 
-    private void ParseParams(string channelKeyMessage, out WebGlChannel channel, out WebGlChannel.WebGLCallInvoker call, out string payload)
+    private void ParseParams(string channelKeyMessage, out WebGlChannel channel, out WebGLCall call, out string[] parameters)
     {
-        var parameters = channelKeyMessage.Split('|');
+        parameters = channelKeyMessage.Split('|');
         var channelKey = int.Parse(parameters[0]);
         channel = _channelMap[channelKey];
         call = parameters.Length > 1 ? channel.Calls[int.Parse(parameters[1])] : null;
-        payload = parameters.Length > 2 ? parameters[2] : null;
 
     }
 }

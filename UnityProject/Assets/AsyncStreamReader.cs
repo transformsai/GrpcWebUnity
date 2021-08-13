@@ -8,6 +8,8 @@ internal class AsyncStreamReader<T> : AsyncStreamReader, IAsyncStreamReader<T>
 {
     public new T Current => (T) base.Current;
 
+    public AsyncStreamReader(CancellationToken masterToken) : base(masterToken) { }
+
     public void AddItem(T item) => AddItem((object) item);
 
     public override void AddItem(object item)
@@ -16,14 +18,20 @@ internal class AsyncStreamReader<T> : AsyncStreamReader, IAsyncStreamReader<T>
         else throw new InvalidCastException(
             $"Bad item for stream. Expected {typeof(T).Name} got {item?.GetType().Name ?? "null"}");
     }
+
 }
 
 internal class AsyncStreamReader : IAsyncStreamReader<object>
 {
     public object Current { get; private set; }
+
+    private readonly CancellationToken _masterToken;
     private bool _isFinished;
     private readonly Queue<object> _queue = new Queue<object>();
     private TaskCompletionSource<object> _event = new TaskCompletionSource<object>();
+
+
+    public AsyncStreamReader(CancellationToken masterToken) => _masterToken = masterToken;
 
     public async Task<bool> MoveNext(CancellationToken cancellationToken)
     {
@@ -36,27 +44,35 @@ internal class AsyncStreamReader : IAsyncStreamReader<object>
             }
 
             if (_isFinished) return false;
-            await _event.Task.WaitAsync(cancellationToken);
+            var mergedToken = cancellationToken;
+
+            if(cancellationToken!= _masterToken)
+                mergedToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _masterToken).Token;
+
+            await _event.Task.WaitAsync(mergedToken);
         }
     }
 
     public void SignalEnd()
     {
         _isFinished = true;
-        _event.SetResult(null);
+        var oldEvent = _event;
         _event = new TaskCompletionSource<object>();
+        oldEvent.SetResult(null);
     }
 
     public void SignalError(Exception e)
     {
-        _event.SetException(e);
+        var oldEvent = _event;
         _event = new TaskCompletionSource<object>();
+        oldEvent.SetException(e);
     }
 
     public virtual void AddItem(object item)
     {
         _queue.Enqueue(item);
-        _event.SetResult(null);
+        var oldEvent = _event;
         _event = new TaskCompletionSource<object>();
+        oldEvent.SetResult(null);
     }
 }

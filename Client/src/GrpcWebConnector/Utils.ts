@@ -13,10 +13,10 @@ export function fromBase64(str: string): string {
 }
 
 export const BinarySuffix = "-bin";
-export function EncodeMetadata(metadata?: RpcMetadata): string | null {
-  if (!metadata) return null;
+export function EncodeMetadata(metadata?: RpcMetadata): string {
+  if (!metadata) return "";
   var entries = Object.entries(metadata);
-  if (entries.length == 0) return null;
+  if (entries.length == 0) return "";
   var builder = "";
   for (var entry of entries) {
     var key = entry[0];

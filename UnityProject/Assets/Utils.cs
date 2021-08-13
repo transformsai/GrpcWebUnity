@@ -106,4 +106,10 @@ static class Utils
         var bytes = Convert.FromBase64String(str);
         return Encoding.UTF8.GetString(bytes);
     }
+
+    public static Task<TNewResult> ContinueWithSync<TResult, TNewResult>(this Task<TResult> task,
+        Func<Task<TResult>, TNewResult> contFunc, CancellationToken token = default)
+    {
+        return task.ContinueWith(contFunc, token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Current);
+    }
 }

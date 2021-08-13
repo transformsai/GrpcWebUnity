@@ -46,7 +46,6 @@ export default class Delegator {
     base64Message:string,
     deadlineTimestampSecs:number,
   ): number {
-    debugger;
     console.log("weas?");
 
     const instance = this.findInstance(instanceKey);
