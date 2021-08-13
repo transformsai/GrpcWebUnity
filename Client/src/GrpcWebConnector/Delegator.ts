@@ -46,8 +46,6 @@ export default class Delegator {
     base64Message:string,
     deadlineTimestampSecs:number,
   ): number {
-    console.log("weas?");
-
     const instance = this.findInstance(instanceKey);
     const channel = instance.findChannel(channelKey);
     return channel.unaryRequest(serviceName, methodName, headers, base64Message, deadlineTimestampSecs);

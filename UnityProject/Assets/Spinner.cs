@@ -1,31 +1,2 @@
-using System.Threading;
-using System.Threading.Tasks;
-using Ai.Transforms.Grpcwebunity;
-using Grpc.Core;
-using UnityEngine;
-
-public class Spinner : MonoBehaviour
-{
-
-    // Update is called once per frame
-    async void Awake()
-    {
-        var instance = GrpcWebConnector.Instance;
-        var channel = await instance.MakeChannelAsync("http://localhost:8001");
-
-        var client = new TestService.TestServiceClient(channel);
-        var call = client.ServerStream(new Request { Data = "earaara" });
-        var stream = call.ResponseStream;
-        while (await stream.MoveNext())
-        {
-            var item = stream.Current;
-            Debug.Log("Success! " + item.Data);
-        }
-    }
-    private void Update()
-    {
-
-        transform.Rotate(Vector3.up, 1f);
-    }
-}
-
+using Ai.Transforms.Grpcwebunity;using Grpc.Core;using GrpcWebUnity;using UnityEngine;public class Spinner : MonoBehaviour{    private int i = 0;    TestService.TestServiceClient client;    // Update is called once per frame
+    async void Awake()    {        var instance = GrpcWebConnector.Instance;        var channel = await instance.MakeChannelAsync("http://localhost:8001");        client = new TestService.TestServiceClient(channel);        var call = client.ServerStream(new Request { Data = "cheem" });        var stream = call.ResponseStream;        while (await stream.MoveNext())        {            var item = stream.Current;            Debug.Log("Success! " + item.Data);        }    }    private void Update()    {        if (i++ % 200 == 0)        {            client.UnaryAsync(new Request { Data = "earaara" + i }).ResponseAsync.ContinueWithSync(it=>Debug.Log(it.Result));        }        transform.Rotate(Vector3.up, 1f);    }}

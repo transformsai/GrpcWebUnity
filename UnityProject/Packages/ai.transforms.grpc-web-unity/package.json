@@ -1,0 +1,21 @@
+{
+    "name": "ai.transforms.grpc-web-unity",
+    "version": "0.1.0",
+    "displayName": "GrpcWebUnity",
+    "description": "Allows Unity to work with webgl grpc-web",
+    "unity": "2020.3",
+    "unityRelease": "15f2",
+    "documentationUrl": "https://github.com/transitional-forms-inc/GrpcWebUnity",
+    "dependencies": {
+   },
+   "keywords": [
+      "grpc-web",
+      "grpc",
+      "protobuf"
+    ],
+    "author": {
+      "name": "Dante Camarena, Liam Atticus Clarke, Transitional Forms Inc",
+      "email": "dante@transforms.com",
+      "url": "http://transforms.ai"
+    }
+  }

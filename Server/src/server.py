@@ -5,15 +5,16 @@ from grpcwebunity.service_pb2 import Request
 from grpcwebunity.service_pb2_grpc import TestServiceServicer
 from grpcwebunity.service_pb2 import Request, Response
 
+
 class TestService(TestServiceServicer):
     def Unary(self, request: Request, context: ServicerContext) -> Response:
         return Response(
-            data="Hello Dante!"
+            data="Hello Dante!" + request.data
         )
 
     async def ServerStream(self, request: Request, context: ServicerContext) -> Generator[Response, None, None]:
-        while True:
+        for i in range(0, 20):
             yield Response(
-                data="Hello Dante!"
+                data="request.data" + str(i)
             )
             await asyncio.sleep(3)
