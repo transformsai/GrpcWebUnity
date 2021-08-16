@@ -1,6 +1,6 @@
 {
   "name": "grpcwebunity",
-  "version": "1.0.0",
+  "version": "0.1.1",
   "description": "Allows Unity Grpc to connect in a WebGL build",
   "main": "index.ts",
   "scripts": {
