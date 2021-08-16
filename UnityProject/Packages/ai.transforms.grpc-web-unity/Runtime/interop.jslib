@@ -13,7 +13,7 @@ mergeInto(LibraryManager.library, {
       if (!scriptTag) {
         scriptTag = document.createElement("script");
         scriptTag.id = objName;
-        scriptTag.src = "./bundle.js";
+        scriptTag.src = "./GrpcWebUnity.js";
         scriptTag.onload = register;
         document.body.appendChild(scriptTag);
       } else {

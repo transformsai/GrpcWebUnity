@@ -8,7 +8,7 @@
     "lint": "eslint src/ --ext .js,.jsx,.ts,.tsx",
     "compile-protos": "node ./compile-protos.js",
     "build": "npx esbuild src/main.ts --bundle --sourcemap=external --outfile=dist/esbuild/bundle.js",
-    "build-unity": "npx esbuild src/main.ts --bundle --sourcemap=external --outfile=../UnityProject/Build/WebGL/bundle.js",
+    "build-unity": "npx esbuild src/main.ts --bundle --sourcemap=external --outfile=../UnityProject/Packages/ai.transforms.grpc-web-unity/Editor/GrpcWebUnity.js",
     "clean": "rm -rf dist build",
     "ts-node": "ts-node",
     "postinstall": "npm run compile-protos"
