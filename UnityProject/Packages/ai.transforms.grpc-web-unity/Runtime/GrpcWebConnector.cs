@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Threading;
 using System.Threading.Tasks;
 using Grpc.Core;
 using UnityEngine;
@@ -47,9 +48,9 @@ namespace GrpcWebUnity
 
         }
 
-        public async Task<ChannelBase> MakeChannelAsync(string target)
+        public async Task<ChannelBase> MakeChannelAsync(string target, CancellationToken? cancellationToken = null)
         {
-            await WaitForInitialization;
+            await WaitForInitialization.WaitAsync(cancellationToken ?? CancellationToken.None);
             return MakeChannel(target);
         }
 
@@ -80,7 +81,7 @@ namespace GrpcWebUnity
         {
 
             ParseParams(channelCallStatusDetailMessage, out _, out var call, out var parameters);
-            var code = (StatusCode) int.Parse(parameters[2]);
+            var code = (StatusCode)int.Parse(parameters[2]);
             var detail = Utils.FromBase64Utf8(parameters[3]);
             var trailersString = Utils.FromBase64Utf8(parameters[4]);
             var messageEncoded = parameters.Length < 6 ? null : Convert.FromBase64String(parameters[5]);
