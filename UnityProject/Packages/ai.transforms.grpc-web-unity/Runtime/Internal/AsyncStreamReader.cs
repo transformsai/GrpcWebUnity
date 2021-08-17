@@ -64,14 +64,15 @@ namespace GrpcWebUnity.Internal
             _isFinished = true;
             var oldEvent = _event;
             _event = new TaskCompletionSource<object>();
-            oldEvent.SetResult(null);
+            oldEvent.TrySetResult(null);
         }
 
         public void SignalError(Exception e)
         {
+            _isFinished = true;
             var oldEvent = _event;
             _event = new TaskCompletionSource<object>();
-            oldEvent.SetException(e);
+            oldEvent.TrySetException(e);
         }
 
         public virtual void AddItem(object item)
@@ -79,7 +80,7 @@ namespace GrpcWebUnity.Internal
             _queue.Enqueue(item);
             var oldEvent = _event;
             _event = new TaskCompletionSource<object>();
-            oldEvent.SetResult(null);
+            oldEvent.TrySetResult(null);
         }
     }
 

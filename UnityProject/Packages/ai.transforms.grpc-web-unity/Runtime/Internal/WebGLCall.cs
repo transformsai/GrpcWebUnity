@@ -7,7 +7,7 @@ using UnityEngine;
 
 namespace GrpcWebUnity.Internal
 {
-    internal class WebGLCall : CallInvoker
+    internal class WebGLCall
     {
         public readonly WebGlChannel Channel;
         private GrpcWebConnector Connector => Channel.Connector;
@@ -69,7 +69,7 @@ namespace GrpcWebUnity.Internal
             Channel.Calls.Add(CallKey, this);
         }
 
-        public override AsyncUnaryCall<TResponse> AsyncUnaryCall<TRequest, TResponse>(
+        public AsyncUnaryCall<TResponse> AsyncUnaryCall<TRequest, TResponse>(
             Method<TRequest, TResponse> method, string host, CallOptions options, TRequest request)
         {
 
@@ -89,7 +89,7 @@ namespace GrpcWebUnity.Internal
         }
 
 
-        public override AsyncServerStreamingCall<TResponse> AsyncServerStreamingCall<TRequest, TResponse>(
+        public AsyncServerStreamingCall<TResponse> AsyncServerStreamingCall<TRequest, TResponse>(
             Method<TRequest, TResponse> method,
             string host,
             CallOptions options,
@@ -110,20 +110,6 @@ namespace GrpcWebUnity.Internal
             options.CancellationToken.Register(call.Dispose);
             return call;
         }
-
-        public override TResponse BlockingUnaryCall<TRequest, TResponse>(Method<TRequest, TResponse> method,
-            string host, CallOptions options, TRequest request) =>
-            throw new NotImplementedException(
-                "UnityWebGL does not allow for blocking calls. Callback happens on main thread.");
-
-        public override AsyncClientStreamingCall<TRequest, TResponse> AsyncClientStreamingCall<TRequest, TResponse>(
-            Method<TRequest, TResponse> method, string host, CallOptions options) =>
-            throw new NotImplementedException("GrpcWeb does not allow for client streaming.");
-
-        public override AsyncDuplexStreamingCall<TRequest, TResponse> AsyncDuplexStreamingCall<TRequest, TResponse>(
-            Method<TRequest, TResponse> method, string host, CallOptions options) =>
-            throw new NotImplementedException();
-
 
 
         internal void ReportHeaders(Metadata headers)
@@ -190,7 +176,7 @@ namespace GrpcWebUnity.Internal
         {
             _status = exception.Status;
             _streamReader?.SignalError(exception);
-            _unaryResponse?.SetException(exception);
+            _unaryResponse?.TrySetException(exception);
             _headers.TrySetException(exception);
         }
     }
