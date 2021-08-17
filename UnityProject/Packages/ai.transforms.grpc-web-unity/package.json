@@ -1,6 +1,6 @@
 {
     "name": "ai.transforms.grpc-web-unity",
-    "version": "0.1.6",
+    "version": "0.1.7",
     "displayName": "GrpcWebUnity",
     "description": "Allows Unity to work with webgl grpc-web",
     "unity": "2020.3",

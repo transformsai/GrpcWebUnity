@@ -29,8 +29,6 @@ namespace GrpcWebUnity
 
             }
 
-
-
 #if UNITY_WEBGL && !UNITY_EDITOR
             var instance = Internal.GrpcWebConnector.Instance;
             await instance.WaitForInitialization.WithCancellation(cancellationToken);

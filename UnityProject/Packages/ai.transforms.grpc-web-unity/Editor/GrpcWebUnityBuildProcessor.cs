@@ -4,8 +4,10 @@ using UnityEngine;
 using UnityEditor;
 using UnityEditor.Callbacks;
 
-public static class GrpcWebUnityBuildProcessor
+public class GrpcWebUnityBuildProcessor : ScriptableObject
 {
+    public TextAsset script;
+
     [PostProcessBuild]
     public static void OnPostprocessBuild(BuildTarget target, string pathToBuiltProject)
     {
@@ -21,6 +23,14 @@ public static class GrpcWebUnityBuildProcessor
         Debug.Log(destFile);
         Debug.Log(File.Exists(destFile));
 
+    }
+
+    [MenuItem("cheem/Cham")]
+    public static void PrintDefaultScript()
+    {
+        var instance = ScriptableObject.CreateInstance<GrpcWebUnityBuildProcessor>();
+        Debug.Log(AssetDatabase.GetAssetPath(instance.script));
+        DestroyImmediate(instance);
     }
 
     // returns the filepath of the code that called this method.
