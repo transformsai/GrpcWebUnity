@@ -1,41 +1,35 @@
 using System.IO;
-using System.Runtime.CompilerServices;
 using UnityEngine;
 using UnityEditor;
 using UnityEditor.Callbacks;
+using PackageInfo = UnityEditor.PackageManager.PackageInfo;
 
 public class GrpcWebUnityBuildProcessor : ScriptableObject
 {
-    public TextAsset script;
+    // Set in the script instance (select the script asset look at the inspector)
+    public TextAsset Script;
 
-    [PostProcessBuild]
+    [PostProcessBuild(-1)]
     public static void OnPostprocessBuild(BuildTarget target, string pathToBuiltProject)
     {
-        var pathOfThisScript = GetCallingFilePath();
-        var parent = Directory.GetParent(pathOfThisScript);
-
-        // We assume this file exists in the folder in which this script (GrpcWebUnityBuildProcessor) resides.
-        var jsFileName = "GrpcWebUnity.js";
-        var srcFile = Path.Combine($"{parent}", jsFileName);
-        var destFile = Path.Combine($"{pathToBuiltProject}", jsFileName);
-        File.Copy(srcFile, destFile, true);
-        Debug.Log(srcFile);
-        Debug.Log(destFile);
-        Debug.Log(File.Exists(destFile));
+        var sourceFileName = GetScriptPath();
+        var destFile = Path.Combine($"{pathToBuiltProject}", Path.GetFileName(sourceFileName));
+        File.Copy(sourceFileName, destFile, true);
 
     }
 
-    [MenuItem("cheem/Cham")]
-    public static void PrintDefaultScript()
+    public static string GetScriptPath()
     {
-        var instance = ScriptableObject.CreateInstance<GrpcWebUnityBuildProcessor>();
-        Debug.Log(AssetDatabase.GetAssetPath(instance.script));
+        
+        var instance = CreateInstance<GrpcWebUnityBuildProcessor>();
+        var internalPath = AssetDatabase.GetAssetPath(instance.Script);
         DestroyImmediate(instance);
-    }
+        var pkgInfo = PackageInfo.FindForAssetPath(internalPath);
+        var relPath = internalPath.Substring(pkgInfo.assetPath.Length + 1);
+        var resolvedPath = Path.Combine(pkgInfo.resolvedPath, relPath);
+        var path = Path.GetFullPath(resolvedPath);
+        return path;
 
-    // returns the filepath of the code that called this method.
-    static string GetCallingFilePath([CallerFilePath] string filename = "")
-    {
-        return filename;
     }
+    
 }
