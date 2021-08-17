@@ -7,7 +7,7 @@ using UnityEditor.Callbacks;
 public static class GrpcWebUnityBuildProcessor
 {
     [PostProcessBuild]
-    public static void OnPostprocessBuild(BuildTarget target, string pathToBuiltProject)   
+    public static void OnPostprocessBuild(BuildTarget target, string pathToBuiltProject)
     {
         var pathOfThisScript = GetCallingFilePath();
         var parent = Directory.GetParent(pathOfThisScript);
@@ -16,7 +16,7 @@ public static class GrpcWebUnityBuildProcessor
         var jsFileName = "GrpcWebUnity.js";
         var srcFile = Path.Combine($"{parent}", jsFileName);
         var destFile = Path.Combine($"{pathToBuiltProject}", jsFileName);
-        File.Copy(srcFile, destFile);
+        File.Copy(srcFile, destFile, true);
         Debug.Log(srcFile);
         Debug.Log(destFile);
         Debug.Log(File.Exists(destFile));

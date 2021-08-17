@@ -55,7 +55,7 @@ namespace GrpcWebUnity.Internal
                     mergedToken = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken, _masterToken)
                         .Token;
 
-                await _event.Task.WaitAsync(mergedToken);
+                await _event.Task.WithCancellation(mergedToken);
             }
         }
 

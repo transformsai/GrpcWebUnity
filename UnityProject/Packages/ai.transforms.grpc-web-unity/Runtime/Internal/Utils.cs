@@ -9,7 +9,7 @@ namespace GrpcWebUnity.Internal
 {
     public static class Utils
     {
-        public static async Task WaitAsync(this Task task, CancellationToken cancellationToken)
+        public static async Task WithCancellation(this Task task, CancellationToken cancellationToken)
         {
             if (task == null)
                 throw new ArgumentNullException(nameof(task));
@@ -30,7 +30,7 @@ namespace GrpcWebUnity.Internal
             }
         }
 
-        public static async Task<T> WaitAsync<T>(this Task<T> task, CancellationToken cancellationToken)
+        public static async Task<T> WithCancellation<T>(this Task<T> task, CancellationToken cancellationToken)
         {
             if (task == null)
                 throw new ArgumentNullException(nameof(task));

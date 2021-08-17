@@ -42,7 +42,6 @@ namespace GrpcWebUnity.Internal
 
             obj.name = GrpcWebApi.RegisterInstance();
             DontDestroyOnLoad(obj);
-            Debug.Log("Created GrpcWebConnector: " + obj.name);
 
 
         }
@@ -53,7 +52,6 @@ namespace GrpcWebUnity.Internal
                 throw new Exception($"Connector not initialized yet. Wait for {nameof(WaitForInitialization)}");
 
             var channelKey = GrpcWebApi.RegisterChannel(InstanceKey, target);
-            Debug.Log("Registered Channel: " + channelKey);
             var channel = new WebGlChannel(this, target, channelKey);
             _channelMap[channelKey] = channel;
             return channel;
