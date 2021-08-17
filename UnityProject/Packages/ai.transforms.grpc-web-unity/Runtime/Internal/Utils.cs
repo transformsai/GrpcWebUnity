@@ -5,7 +5,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Grpc.Core;
 
-namespace GrpcWebUnity
+namespace GrpcWebUnity.Internal
 {
     public static class Utils
     {
@@ -110,21 +110,13 @@ namespace GrpcWebUnity
         }
 
         public static Task<TNewResult> ContinueWithSync<TResult, TNewResult>(this Task<TResult> task,
-            Func<Task<TResult>, TNewResult> contFunc, CancellationToken token = default)
-        {
-            return task.ContinueWith(contFunc, token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Current);
-        }
-        public static Task ContinueWithSync<TResult>(this Task<TResult> task,
-            Action<Task<TResult>> contFunc, CancellationToken token = default)
-        {
-            object Func(Task<TResult> it)
-            {
-                contFunc(it);
-                return default;
-            }
+            Func<Task<TResult>, TNewResult> contFunc, CancellationToken token = default) =>
+            task.ContinueWith(contFunc, token, TaskContinuationOptions.ExecuteSynchronously, TaskScheduler.Current);
 
-            return task.ContinueWithSync<TResult, object>(Func, token);
-        }
+        public static Task ContinueWithSync<TResult>(this Task<TResult> task,
+            Action<Task<TResult>> contFunc, CancellationToken token = default) =>
+            task.ContinueWith(contFunc, token, TaskContinuationOptions.ExecuteSynchronously,
+                TaskScheduler.Current);
     }
 
 }

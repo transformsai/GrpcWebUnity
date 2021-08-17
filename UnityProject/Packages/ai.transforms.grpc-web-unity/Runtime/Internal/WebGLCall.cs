@@ -5,7 +5,7 @@ using Google.Protobuf;
 using Grpc.Core;
 using UnityEngine;
 
-namespace GrpcWebUnity
+namespace GrpcWebUnity.Internal
 {
     internal class WebGLCall : CallInvoker
     {

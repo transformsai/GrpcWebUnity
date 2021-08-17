@@ -4,7 +4,7 @@ using System.Threading;
 using System.Threading.Tasks;
 using Grpc.Core;
 
-namespace GrpcWebUnity
+namespace GrpcWebUnity.Internal
 {
     internal class AsyncStreamReader<T> : AsyncStreamReader, IAsyncStreamReader<T>
     {

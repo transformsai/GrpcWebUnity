@@ -1,12 +1,11 @@
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Threading;
 using System.Threading.Tasks;
 using Grpc.Core;
 using UnityEngine;
 
-namespace GrpcWebUnity
+namespace GrpcWebUnity.Internal
 {
     public class GrpcWebConnector : MonoBehaviour
     {
@@ -46,12 +45,6 @@ namespace GrpcWebUnity
             Debug.Log("Created GrpcWebConnector: " + obj.name);
 
 
-        }
-
-        public async Task<ChannelBase> MakeChannelAsync(string target, CancellationToken? cancellationToken = null)
-        {
-            await WaitForInitialization.WaitAsync(cancellationToken ?? CancellationToken.None);
-            return MakeChannel(target);
         }
 
         public ChannelBase MakeChannel(string target)

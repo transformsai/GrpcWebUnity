@@ -1,7 +1,7 @@
 using System.Collections.Generic;
 using Grpc.Core;
 
-namespace GrpcWebUnity
+namespace GrpcWebUnity.Internal
 {
     internal class WebGlChannel : ChannelBase
     {
