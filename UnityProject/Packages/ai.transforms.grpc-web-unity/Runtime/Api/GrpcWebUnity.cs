@@ -28,27 +28,27 @@ namespace GrpcWebUnity
         public static async Task<ChannelBase> GetChannelAsync(string targetAddress,
             ChannelCredentials credentials = null, CancellationToken cancellationToken = default)
         {
-            if(credentials == null)
+            if (credentials == null)
             {
-                if (targetAddress.StartsWith(Uri.UriSchemeHttps)) credentials = ChannelCredentials.SecureSsl;
-                else credentials = ChannelCredentials.Insecure;
+                credentials = targetAddress.StartsWith(Uri.UriSchemeHttps) ?
+                    ChannelCredentials.SecureSsl :
+                    ChannelCredentials.Insecure;
             }
 
-            bool valid = Uri.TryCreate(targetAddress, UriKind.Absolute, out var uri);
+            bool isValid = Uri.TryCreate(targetAddress, UriKind.Absolute, out var uri);
 
-            if (!valid || !ValidSchemes.Contains(uri.Scheme))
+            if (!isValid || !ValidSchemes.Contains(uri.Scheme))
             {
-                var scheme = "http://";
-                if (credentials == ChannelCredentials.SecureSsl) scheme = "https://";
-                valid = Uri.TryCreate(scheme + targetAddress, UriKind.Absolute, out uri);
+                var scheme = credentials == ChannelCredentials.SecureSsl ? "https://" : "http://";
+                isValid = Uri.TryCreate(scheme + targetAddress, UriKind.Absolute, out uri);
             }
 
-            if (!valid) throw new UriFormatException($"{nameof(targetAddress)} is not a valid URI: {targetAddress}");
+            if (!isValid) throw new UriFormatException($"{nameof(targetAddress)} is not a valid URI: {targetAddress}");
 
+            // gRPC-web requires a different uri format than C# gRPC (needs to include scheme)
             string webTargetAddress = uri.ToString().TrimEnd('/');
-            // Removes scheme (required for standalone)
+            // strips away scheme
             string standaloneTargetAddress = uri.GetComponents(UriComponents.AbsoluteUri & ~UriComponents.Scheme, UriFormat.UriEscaped).TrimEnd('/');
-
 
 #if UNITY_WEBGL && !UNITY_EDITOR
             var instance = Internal.GrpcWebConnector.Instance;
