@@ -31,7 +31,7 @@ namespace GrpcWebUnity
             if (credentials == null)
             {
                 credentials = targetAddress.StartsWith(Uri.UriSchemeHttps) ?
-                    ChannelCredentials.SecureSsl :
+                    new SslCredentials() :
                     ChannelCredentials.Insecure;
             }
 
@@ -39,7 +39,7 @@ namespace GrpcWebUnity
 
             if (!isValid || !ValidSchemes.Contains(uri.Scheme))
             {
-                var scheme = credentials == ChannelCredentials.SecureSsl ? "https://" : "http://";
+                var scheme = credentials == new SslCredentials() ? "https://" : "http://";
                 isValid = Uri.TryCreate(scheme + targetAddress, UriKind.Absolute, out uri);
             }
 
