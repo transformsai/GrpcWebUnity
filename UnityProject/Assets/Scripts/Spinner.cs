@@ -1,6 +1,6 @@
 using System.Threading;
 using Ai.Transforms.Grpcwebunity;
-using GrpcWebUnity;
+using Grpc.Net.Client;
 using UnityEngine;
 public class Spinner : MonoBehaviour
 {
@@ -10,7 +10,7 @@ public class Spinner : MonoBehaviour
     // Update is called once per frame
     async void Awake()
     {
-        var channel = await GrpcWeb.GetChannelAsync("localhost:8001");
+        var channel = GrpcChannel.ForAddress("http://localhost:8001");
 
         client = new TestService.TestServiceClient(channel);
         var call = client.ServerStream(new Request { Data = "cheem" });
@@ -37,4 +37,3 @@ public class Spinner : MonoBehaviour
          Debug.Log(response.Data);
     }
 }
-
