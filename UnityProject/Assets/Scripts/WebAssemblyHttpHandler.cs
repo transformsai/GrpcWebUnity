@@ -13,8 +13,8 @@ using Enum = System.Enum;
 /// <remarks>See https://developer.mozilla.org/en-US/docs/Web/API/Fetch_API</remarks>
 public class WebAssemblyHttpHandler : HttpMessageHandler
 {
-    static JsReference fetch;
-    static JsReference window;
+    static JsValue fetch;
+    static JsValue window;
 
     /// <summary>
     /// Gets whether the current Browser supports streaming responses
@@ -23,7 +23,7 @@ public class WebAssemblyHttpHandler : HttpMessageHandler
 
     static WebAssemblyHttpHandler()
     {
-        var streamingSupported = JsFunction.Create(
+        var streamingSupported = Runtime.CreateFunction(
                 "return typeof Response !== 'undefined' && 'body' in Response.prototype && typeof ReadableStream === 'function'");
         StreamingSupported = streamingSupported.Call();
     }
@@ -35,8 +35,8 @@ public class WebAssemblyHttpHandler : HttpMessageHandler
 
     private void handlerInit()
     {
-        window = JsReference.GetGlobalObject("window");
-        fetch = JsReference.GetGlobalObject("fetch");
+        window = Runtime.GetGlobalValue("window");
+        fetch = Runtime.GetGlobalValue("fetch");
     }
 
     protected override async Task<HttpResponseMessage> SendAsync(HttpRequestMessage request, CancellationToken cancellationToken)
@@ -59,14 +59,14 @@ public class WebAssemblyHttpHandler : HttpMessageHandler
     {
         try
         {
-            var requestObject = JsObject.Create();
+            var requestObject = Runtime.CreateObject();
 
             if (request.Properties.TryGetValue("WebAssemblyFetchOptions", out var fetchOoptionsValue) &&
                 fetchOoptionsValue is IDictionary<string, object> fetchOptions)
             {
                 foreach (var item in fetchOptions)
                 {
-                    requestObject.SetProp(item.Key, JsReference.FromObject(item.Value));
+                    requestObject.SetProp(item.Key, Runtime.CreateFromObject(item.Value));
                 }
             }
 
@@ -85,17 +85,15 @@ public class WebAssemblyHttpHandler : HttpMessageHandler
                     // using (var uint8Buffer = Uint8Array.From(await request.Content.ReadAsByteArrayAsync ()))
                     // so we split it up into two lines.
                     var byteAsync = await request.Content.ReadAsByteArrayAsync();
-                    using (var uint8Buffer = JsTypedArray.CreateShared(byteAsync))
-                    {
-                        requestObject.SetProp("body", uint8Buffer);
-                    }
+                    using var uint8Buffer = Runtime.MakeSharedTypedArray(byteAsync);
+                    requestObject.SetProp("body", uint8Buffer);
                 }
             }
 
             // Process headers
             // Cors has it's own restrictions on headers.
             // https://developer.mozilla.org/en-US/docs/Web/API/Headers
-            var jsHeaders = JsReference.CreateHostObject("Headers");
+            var jsHeaders = Runtime.GetGlobalValue("Headers").As<JsFunction>().Construct();
             {
                 if (request.Headers != null)
                 {
@@ -122,8 +120,8 @@ public class WebAssemblyHttpHandler : HttpMessageHandler
 
             WasmHttpReadStream wasmHttpReadStream = null;
 
-            JsReference abortController = JsReference.CreateHostObject("AbortController");
-            JsReference signal = abortController.GetProp("signal");
+            JsValue abortController = Runtime.CreateHostObject("AbortController");
+            JsValue signal = abortController.GetProp("signal");
             requestObject.SetProp("signal", signal);
 
             CancellationTokenSource abortCts = CancellationTokenSource.CreateLinkedTokenSource(cancellationToken);
@@ -133,7 +131,7 @@ public class WebAssemblyHttpHandler : HttpMessageHandler
                 wasmHttpReadStream?.Dispose();
             });
 
-            var args = JsArray.CreateEmpty();
+            var args = Runtime.CreateArray();
             args.Add(request.RequestUri.ToString());
             args.Add(requestObject);
 
@@ -171,7 +169,7 @@ public class WebAssemblyHttpHandler : HttpMessageHandler
             if (!respHeaders)
             {
                 var entriesIterator = respHeaders.Invoke("entries");
-                JsReference nextResult = null;
+                JsValue nextResult = null;
                 nextResult = entriesIterator.Invoke("next");
                 while (!nextResult.GetProp("done"))
                 {
@@ -200,12 +198,12 @@ public class WebAssemblyHttpHandler : HttpMessageHandler
 
     class WasmFetchResponse : IDisposable
     {
-        private JsReference fetchResponse;
-        private JsReference abortController;
+        private JsValue fetchResponse;
+        private JsValue abortController;
         private readonly CancellationTokenSource abortCts;
         private readonly CancellationTokenRegistration abortRegistration;
 
-        public WasmFetchResponse(JsReference fetchResponse, JsReference abortController, CancellationTokenSource abortCts, CancellationTokenRegistration abortRegistration)
+        public WasmFetchResponse(JsValue fetchResponse, JsValue abortController, CancellationTokenSource abortCts, CancellationTokenRegistration abortRegistration)
         {
             this.fetchResponse = fetchResponse;
             this.abortController = abortController;
@@ -221,8 +219,8 @@ public class WebAssemblyHttpHandler : HttpMessageHandler
         public string Url => fetchResponse.GetProp("url").As<string>();
         //public bool IsUseFinalURL => (bool)managedJSObject.GetObjectProperty("useFinalUrl");
         public bool IsBodyUsed => fetchResponse.GetProp("bodyUsed").As<bool>();
-        public JsReference Headers => fetchResponse.GetProp("headers");
-        public JsReference Body => fetchResponse.GetProp("body");
+        public JsValue Headers => fetchResponse.GetProp("headers");
+        public JsValue Body => fetchResponse.GetProp("body");
 
         public JsPromise ArrayBuffer() => fetchResponse.Invoke("arrayBuffer").As<JsPromise>();
         public JsPromise Text() => fetchResponse.Invoke("text").As<JsPromise>();
@@ -265,7 +263,7 @@ public class WebAssemblyHttpHandler : HttpMessageHandler
             }
 
             var dataBuffer = await _status.ArrayBuffer();
-            using (var dataBinView = JsReference.CreateHostObject("Uint8Array",dataBuffer).As<JsTypedArray>())
+            using (var dataBinView = Runtime.CreateHostObject("Uint8Array",dataBuffer).As<JsTypedArray>())
             {
                 _data = dataBinView.GetDataCopy<byte>();
                 _status.Dispose();
@@ -310,7 +308,7 @@ public class WebAssemblyHttpHandler : HttpMessageHandler
     class WasmHttpReadStream : Stream
     {
         WasmFetchResponse _status;
-        JsReference _reader;
+        JsValue _reader;
 
         byte[] _bufferedBytes;
         int _position;

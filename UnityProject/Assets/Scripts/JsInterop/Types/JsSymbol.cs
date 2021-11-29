@@ -7,4 +7,6 @@ public class JsSymbol : JsReference
     internal JsSymbol(double refId) : base(JsTypes.Symbol, refId) { }
     public override object RawValue => this;
     public override bool TruthyValue => true;
+
+    public override string ToString() => Label;
 }

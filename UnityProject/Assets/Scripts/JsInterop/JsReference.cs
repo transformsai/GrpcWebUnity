@@ -1,141 +1,54 @@
 using System;
-using System.Collections;
 using System.Collections.Generic;
-using System.ComponentModel;
-using System.Numerics;
 
-public abstract class JsReference
+public abstract class JsReference : IDisposable, IJsValue
 {
-    public static JsReference Undefined => JsUndefined.Instance;
-    public static JsNull Null => JsNull.Instance;
-    public static JsBool True => JsBool.True;
-    public static JsBool False => JsBool.False;
+    private static readonly Dictionary<double, WeakReference<JsReference>> ReferenceMap = new Dictionary<double, WeakReference<JsReference>>();
+    private JsValue? _ref;
+    public JsValue RefValue => _ref ?? throw new ObjectDisposedException("Tried to accesss disposed reference value");
+    
+    internal JsReference(JsTypes typeId, double refId)
+    {
+        ReferenceMap.Add(refId, new WeakReference<JsReference>(this));
+        _ref = new JsValue(typeId, refId, this);
+    }
 
-    internal readonly JsTypes TypeId;
-    internal readonly double RefId;
+    public static bool TryGetRef(double refId, out JsReference jsReference)
+    {
+        jsReference = null;
+        return ReferenceMap.TryGetValue(refId, out var weakRef) && weakRef.TryGetTarget(out jsReference);
+    }
 
     public abstract object RawValue { get; }
     public abstract bool TruthyValue { get; }
+    public virtual double NumberValue => Runtime.GetNumber(this);
+    public JsValue GetProp(JsValue key) => RefValue.GetProp(key);
+    public JsValue Invoke(string functionName, params JsValue[] values) =>
+        RefValue.Invoke(functionName, values);
+    public JsValue Invoke(string functionName, JsValue param1 = default, JsValue param2 = default, JsValue param3 = default) =>
+        RefValue.Invoke(functionName, param1, param2, param3);
 
-    private protected JsReference(JsTypes typeId, double refId)
+    public static implicit operator JsValue(JsReference reference) =>
+        reference.RefValue;
+    public string GetJsStringImpl() => Runtime.GetString(this);
+    public override string ToString() => ReferenceEquals(RawValue, this) ? GetJsStringImpl() : RawValue?.ToString() ?? "";
+    public object As(Type type) => RefValue.As(type);
+    public T As<T>() => RefValue.As<T>();
+    public JsValue EvaluateOnThis(string functionBody) => RefValue.EvaluateOnThis(functionBody);
+
+    public void Dispose()
     {
-        TypeId = typeId;
-        RefId = refId;
+        Dispose(true);
+        GC.SuppressFinalize(this);
+    }
+    ~JsReference() => Dispose(false);
+
+    protected virtual void Dispose(bool isDisposing)
+    {
+        if (!_ref.HasValue) return;
+        ReferenceMap.Remove(_ref.Value.Value);
+        Runtime.GarbageCollect(this);
+        _ref = null;
     }
 
-    public override string ToString() => ReferenceEquals(RawValue, this) ? GetJsStringImpl() : $"{RawValue}";
-
-    public virtual string GetJsStringImpl() => Runtime.GetString((int)TypeId, RefId);
-    
-    ~JsReference() => Runtime.GarbageCollect((int)TypeId, RefId);
-
-    public JsReference GetProp(string key) => FromRef(Runtime.GetProp(RefId, key, out var typeId), typeId);
-
-    public static JsReference GetGlobalObject(string name) => FromRef(Runtime.GetGlobalObject(name, out var typeId), typeId);
-    public static JsReference CreateHostObject(string typeName, JsReference param1 = null, JsReference param2 = null, JsReference param3 = null)
-    {
-        var refId = Runtime.CreateHostObject(typeName,
-            (int)param1.TypeId, param1.RefId,
-            (int)param2.TypeId, param2.RefId,
-            (int)param3.TypeId, param3.RefId,
-            out var typeId);
-        return FromRef(refId, typeId);
-    }
-
-    public static JsReference CreateHostObjectSlow(string typeName, JsArray parameters) => FromRef(Runtime.CreateHostObjectSlow(typeName, parameters.RefId, out var typeId), typeId);
-
-    public JsReference Invoke(string functionName, JsReference param1 = null, JsReference param2 = null, JsReference param3 = null)
-    {
-        if (param1 == null) param1 = Undefined;
-        if (param2 == null) param2 = Undefined;
-        if (param3 == null) param3 = Undefined;
-
-        var refId = Runtime.Invoke(RefId, functionName,
-            (int)param1.TypeId, param1.RefId,
-            (int)param2.TypeId, param2.RefId,
-            (int)param3.TypeId, param3.RefId,
-            out var retType);
-
-        return FromRef(refId, retType);
-    }
-
-
-
-    internal static JsReference FromRef(double refId, int typeId)
-    {
-        ;
-        switch ((JsTypes)typeId)
-        {
-            case JsTypes.Undefined: return Undefined;
-            case JsTypes.Null: return Null;
-            case JsTypes.Bool: return refId != 0 ? True : False;
-            case JsTypes.Number: return new JsNumber(refId);
-            case JsTypes.BigInt: return new JsBigInt(refId);
-            case JsTypes.String: return new JsString(refId);
-            case JsTypes.Symbol: return new JsSymbol(refId);
-            case JsTypes.Object: return new JsObject(refId);
-            case JsTypes.Function: return new JsFunction(refId);
-            case JsTypes.Callback: return JsCallback.GetReference(refId);
-            case JsTypes.Promise: return new JsPromise(refId);
-            case JsTypes.Array: return new JsArray(refId);
-            case JsTypes.TypedArray: return JsTypedArray.GetReference(refId);
-            default: throw new ArgumentOutOfRangeException(nameof(typeId), $"Unknown message type {typeId}");
-
-        }
-    }
-
-    public static JsReference FromObject(object obj)
-    {
-        switch (obj)
-        {
-            case null: return Null;
-            case JsReference i: return i;
-            case bool i: return i;
-            case int i: return i;
-            case float i: return i;
-            case double i: return i;
-            //Todo: case BigInteger i: return i;
-            case string i: return i;
-            case IDictionary i: return JsObject.Create(i);
-            case IList i: return JsArray.Create(i);
-            case Delegate d: return JsCallback.Create(d);
-            default: throw new InvalidCastException($"Object cannot be converted to JS");
-        }
-    }
-
-    public static implicit operator JsReference(int i) => JsNumber.Create(i);
-    public static implicit operator JsReference(float i) => JsNumber.Create(i);
-    public static implicit operator JsReference(double i) => JsNumber.Create(i);
-    public static implicit operator JsReference(bool i) => JsBool.Create(i);
-    public static implicit operator JsReference(string i) => JsString.Create(i);
-    public static implicit operator JsReference(Array i) => JsArray.Create(i);
-    public static implicit operator bool(JsReference i) => i?.TruthyValue ?? false;
-
-}
-
-
-public static class JsReferenceExtensions
-{
-    public static T As<T>(this JsReference j)
-    {
-        if (j is T t) return t;
-        return (T)j.ConvertTo(typeof(T));
-    }
-
-    public static object ConvertTo(this JsReference j, Type type)
-    {
-        if (j == null) return null;
-
-        if (type.IsInstanceOfType(j)) return j;
-
-        var value = j.RawValue;
-
-        if (type.IsInstanceOfType(value)) return value;
-
-        var converter = TypeDescriptor.GetConverter(value);
-
-        if (converter.CanConvertTo(type)) return converter.ConvertTo(value, type);
-
-        throw new InvalidCastException($"cannot convert JsReference {j.GetType()} to {type}");
-    }
 }
