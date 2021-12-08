@@ -8,11 +8,13 @@ from grpcwebunity.service_pb2 import Request, Response
 
 class TestService(TestServiceServicer):
     def Unary(self, request: Request, context: ServicerContext) -> Response:
+        print("got Unary: " + request.data)
         return Response(
             data="Hello Dante!" + request.data
         )
 
     async def ServerStream(self, request: Request, context: ServicerContext) -> Generator[Response, None, None]:
+        print("got Stream: " + request.data)
         for i in range(0, 20):
             yield Response(
                 data="request.data" + str(i)

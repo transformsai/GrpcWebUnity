@@ -5,6 +5,9 @@ using System.Net;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
+using JsInterop;
+using JsInterop.Internal;
+using JsInterop.Types;
 using Enum = System.Enum;
 
 /// <see cref="WebAssemblyHttpHandler" /> is a specialty message handler based on the
@@ -85,7 +88,7 @@ public class WebAssemblyHttpHandler : HttpMessageHandler
                     // using (var uint8Buffer = Uint8Array.From(await request.Content.ReadAsByteArrayAsync ()))
                     // so we split it up into two lines.
                     var byteAsync = await request.Content.ReadAsByteArrayAsync();
-                    using var uint8Buffer = Runtime.MakeSharedTypedArray(byteAsync);
+                    using var uint8Buffer = Runtime.CreateSharedTypedArray(byteAsync);
                     requestObject.SetProp("body", uint8Buffer);
                 }
             }
@@ -186,13 +189,13 @@ public class WebAssemblyHttpHandler : HttpMessageHandler
                     nextResult = entriesIterator.Invoke("next");
                 }
             }
-
-            tcs.SetResult(httpresponse);
-        }
-        catch (Exception exception)
-        {
-            var httpExc = new HttpRequestException(exception.Message);
-            tcs.SetException(httpExc);
+            
+            tcs.SetResult (httpresponse);
+        } catch (JsException jsExc)  {
+            //var httpExc = new HttpRequestException (jsExc.Message);
+            tcs.SetException (jsExc);
+        } catch (Exception exception)  {
+            tcs.SetException (exception);
         }
     }
 
@@ -343,7 +346,7 @@ public class WebAssemblyHttpHandler : HttpMessageHandler
                 throw new ArgumentOutOfRangeException(nameof(count));
             }
 
-            if (_reader == null)
+            if (!_reader)
             {
                 // If we've read everything, then _reader and _status will be null
                 if (_status == null)

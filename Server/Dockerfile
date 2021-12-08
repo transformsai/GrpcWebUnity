@@ -10,4 +10,4 @@ WORKDIR /usr/GrpcWebUnity/Server/
 
 RUN pip install --no-cache-dir -r requirements.txt
 
-ENTRYPOINT ["python", "./src/main.py"]
+ENTRYPOINT ["python", "-u", "./src/main.py"]

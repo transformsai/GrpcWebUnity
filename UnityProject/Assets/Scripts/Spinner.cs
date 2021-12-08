@@ -3,6 +3,7 @@ using System.Threading;
 using Ai.Transforms.Grpcwebunity;
 using Grpc.Net.Client;
 using Grpc.Net.Client.Web;
+using JsInterop;
 using UnityEngine;
 public class Spinner : MonoBehaviour
 {
@@ -12,8 +13,9 @@ public class Spinner : MonoBehaviour
     // Update is called once per frame
     async void Awake()
     {
-
+        
 #if UNITY_WEBGL && !UNITY_EDITOR
+        Runtime.Initialize();
         var innerHandler = new WebAssemblyHttpHandler();
 #else
         var innerHandler = new HttpClientHandler();

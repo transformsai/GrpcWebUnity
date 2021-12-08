@@ -6,6 +6,12 @@
       "source": "embedded",
       "dependencies": {}
     },
+    "ai.transforms.js-interop": {
+      "version": "file:ai.transforms.js-interop",
+      "depth": 0,
+      "source": "embedded",
+      "dependencies": {}
+    },
     "ai.transforms.protobuf-unity": {
       "version": "file:ai.transforms.unity-protobuf",
       "depth": 0,
