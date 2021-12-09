@@ -5,6 +5,8 @@ using System.Linq;
 using System.Numerics;
 using System.Runtime.CompilerServices;
 using System.Runtime.InteropServices;
+using System.Threading;
+using System.Threading.Tasks;
 using JsInterop.Internal;
 using JsInterop.Types;
 using Raw = JsInterop.Internal.RuntimeRaw;
@@ -125,10 +127,17 @@ namespace JsInterop
             var handle = GCHandle.Alloc(array, GCHandleType.Pinned);
             try
             {
-                var ptr = GCHandle.ToIntPtr(handle);
-                var refId = Raw.CreateSharedTypedArray(out var typeId, ptr, array.TypeCode(), array.Length);
-                CheckException(refId, typeId);
-                return new JsSharedTypedArray(refId, handle);
+                //var ptr = GCHandle.ToIntPtr(handle);
+                unsafe
+                {
+                    fixed (T* ptr = array)
+                    {
+                        var refId = Raw.CreateSharedTypedArray(out var typeId, (int)ptr, array.TypeCode(), array.Length);
+                        CheckException(refId, typeId);
+                        return new JsSharedTypedArray(refId, handle);
+
+                    }
+                }
             }
             catch (Exception)
             {
@@ -140,12 +149,16 @@ namespace JsInterop
 
         public static JsTypedArray CreateTypedArray<T>(T[] array) where T : unmanaged
         {
-            return WithHandle(array, arrayPtr =>
+            unsafe
             {
-                var refId = Raw.CreateTypedArray(out var typeId, arrayPtr, array.TypeCode(), array.Length);
-                CheckException(refId, typeId);
-                return new JsTypedArray(refId);
-            });
+                fixed (T* ptr = array)
+                {
+                    var refId = Raw.CreateSharedTypedArray(out var typeId, (int) ptr, array.TypeCode(), array.Length);
+                    CheckException(refId, typeId);
+                    return new JsTypedArray(refId);
+
+                }
+            }
         }
 
         internal static string GetString(JsValue obj)
@@ -188,11 +201,21 @@ namespace JsInterop
                 default: throw new InvalidCastException($"Object cannot be converted to {nameof(JsValue)}");
             }
         }
+        public static SynchronizationContext SyncContext { get; set; }
 
-        public static void Initialize() { Raw.Initialize(OnJsCallback, Acquire, Release); }
+        public static void Initialize()
+        {
+            SyncContext = SynchronizationContext.Current;
+
+            UnityEngine.Debug.Log($"Initialize: {SynchronizationContext.Current}");
+            Raw.Initialize(OnJsCallback, Acquire, Release);
+        }
+
 
         private static bool Acquire(double refId)
         {
+            UnityEngine.Debug.Log($"Acquire: {SynchronizationContext.Current}");
+            SynchronizationContext.SetSynchronizationContext(SyncContext);
             if (!JsReference.TryGetRef(refId, out var reference))
             {
                 Debug.Fail("JS tried to acquire object that was not found or disposed");
@@ -204,6 +227,8 @@ namespace JsInterop
 
         private static bool Release(double refId)
         {
+            UnityEngine.Debug.Log($"Release: {SynchronizationContext.Current}");
+            SynchronizationContext.SetSynchronizationContext(SyncContext);
             if (!JsReference.TryGetRef(refId, out var reference))
             {
                 Debug.Fail("Reference was missing when trying to be released from JS");
@@ -216,6 +241,9 @@ namespace JsInterop
 
         private static (double value, int typeId) OnJsCallback(double callbackRefId, double value, int typeid, bool hasParamList)
         {
+            UnityEngine.Debug.Log($"OnJsCallback: {SynchronizationContext.Current}");
+            
+            SynchronizationContext.SetSynchronizationContext(SyncContext);
             var existingCallback = Receive(callbackRefId, (int)JsTypes.Callback).As<JsCallback>();
             var param = Receive(value, typeid);
 
@@ -255,7 +283,6 @@ namespace JsInterop
             if (refId == 0) throw new JsException($"Unknown Js Exception at {funcName}");
             var exceptionString = Raw.GetString(out var strType, refId, (int)JsTypes.String);
             if (strType != (int)JsTypes.String) throw new JsException($"Unknown Js Exception at {funcName}");
-            exceptionString = $"{funcName}:\n{exceptionString}";
             throw new JsException(exceptionString);
         }
 
@@ -283,12 +310,15 @@ namespace JsInterop
                 case JsTypes.Function: return new JsFunction(refId);
                 case JsTypes.Promise: return new JsPromise(refId);
                 case JsTypes.Array: return new JsArray(refId);
+                case JsTypes.TypedArray: return new JsTypedArray(refId);
                 // Cannot create these from just reference numbers. These need to be made in C#
                 case JsTypes.Callback:
                 case JsTypes.SharedTypedArray:
                     throw new ObjectDisposedException($"Received JS reference of special type {typeId}. This object was likely disposed, but was still referenced by JS.");
+                case JsTypes.Exception:
+                    throw new Exception("Cannot marshal JS Exception");
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(typeId), $"Unknown message type {typeId}");
+                    throw new ArgumentOutOfRangeException(nameof(typeId), $"Unknown JS type {type}");
 
             }
         }

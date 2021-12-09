@@ -56,7 +56,7 @@ class JsSpecialReference {
                 throw new Error("Unsupported special type");
         }
         this.weakRef = new WeakRef(ref);
-        this.runtime.weakRefFinalizer.register(ref, this.value);
+        this.runtime.weakRefFinalizer.register(ref, this.value, ref);
         return ref;
     }
     GetSharedArray() {
@@ -65,7 +65,7 @@ class JsSpecialReference {
         return sharedArray;
     }
     GetCallbackFunction() {
-        return () => {
+        var fn = function () {
             let rawArgs = arguments;
             let param;
             let isParamArray = false;
@@ -74,7 +74,7 @@ class JsSpecialReference {
                 param = Undefined;
             }
             else if (paramNames.length == 1) {
-                param = this.runtime.makeRefFrom(rawArgs[1]);
+                param = this.runtime.makeRefFrom(rawArgs[0]);
             }
             else {
                 isParamArray = true;
@@ -92,6 +92,7 @@ class JsSpecialReference {
             this.runtime.callbackResponseRegistry.delete(callbackResponseId);
             return retval;
         };
+        return fn.bind(this);
     }
 }
 const Undefined = Object.freeze({ value: 0, type: JsTypes.Undefined });
@@ -172,9 +173,11 @@ class RuntimeContext {
         switch (type) {
             case JsTypes.Callback:
             case JsTypes.SharedTypedArray:
-                holder = new JsSpecialReference(this, value, type, obj);
+                holder = new JsSpecialReference(this, type, value, obj);
+                break;
             default:
                 holder = { value, type, reference: obj };
+                break;
         }
         this.referenceRegistry.set(value, holder);
         if (isPrimitive)
@@ -311,11 +314,11 @@ class RuntimeContext {
         return this.createReference(JsTypes.Callback, paramNames);
     }
     CreateSharedTypedArray(pointer, typeCode, arrayLength) {
-        let arrayData = { pointer, typeCode, length };
+        let arrayData = { pointer, typeCode, length: arrayLength };
         return this.createReference(JsTypes.SharedTypedArray, arrayData);
     }
     CreateTypedArray(arrayPtr, typeCode, arrayLength) {
-        let sharedArray = this.arrayBuilder(arrayPtr, typeCode, length);
+        let sharedArray = this.arrayBuilder(arrayPtr, typeCode, arrayLength);
         let ctr = sharedArray.constructor;
         let newArr = new ctr(sharedArray.length);
         newArr.set(sharedArray);
@@ -327,8 +330,11 @@ class RuntimeContext {
         if (!holder)
             return Undefined;
         let ref;
-        if (holder instanceof JsSpecialReference)
+        if (holder instanceof JsSpecialReference) {
             ref = (_a = holder.weakRef) === null || _a === void 0 ? void 0 : _a.deref();
+            if (ref)
+                this.weakRefFinalizer.unregister(ref);
+        }
         else
             ref = holder.reference;
         if (ref) {
@@ -346,11 +352,11 @@ class RuntimeContext {
     }
     GetNumber(value, typeId) {
         let val = this.getValue(value, typeId);
-        return this.makeRefFrom(Number(val));
+        return { type: JsTypes.Number, value: Number(val) };
     }
     GetString(value, typeId) {
         let val = this.getValue(value, typeId);
-        return this.makeRefFrom(String(val));
+        return { type: JsTypes.Number, value: String(val) };
     }
 }
 Module.UnityJsInterop = RuntimeContext;

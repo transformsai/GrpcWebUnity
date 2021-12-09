@@ -40,7 +40,7 @@ class JsSpecialReference implements JsReference {
     }
 
     this.weakRef = new WeakRef(ref);
-    this.runtime.weakRefFinalizer.register(ref, this.value);
+    this.runtime.weakRefFinalizer.register(ref, this.value, ref);
     return ref;
   }
 
@@ -52,7 +52,7 @@ class JsSpecialReference implements JsReference {
   }
 
   GetCallbackFunction() {
-    return () => {
+    var fn  = function(this: JsSpecialReference) {
       let rawArgs = arguments;
 
       let param: JsValue;
@@ -63,7 +63,7 @@ class JsSpecialReference implements JsReference {
         param = Undefined;
       }
       else if (paramNames.length == 1) {
-        param = this.runtime.makeRefFrom(rawArgs[1])
+        param = this.runtime.makeRefFrom(rawArgs[0])
       }
       else {
         isParamArray = true;
@@ -83,6 +83,8 @@ class JsSpecialReference implements JsReference {
       this.runtime.callbackResponseRegistry.delete(callbackResponseId);
       return retval;
     }
+    return fn.bind(this);
+
   }
 }
 
@@ -181,9 +183,11 @@ class RuntimeContext implements JsRuntime {
     switch (type) {
       case JsTypes.Callback:
       case JsTypes.SharedTypedArray:
-        holder = new JsSpecialReference(this, value, type, obj);
+        holder = new JsSpecialReference(this, type, value, obj);
+        break;
       default:
         holder = { value, type, reference: obj };
+        break;
     }
     this.referenceRegistry.set(value, holder);
 
@@ -337,12 +341,12 @@ class RuntimeContext implements JsRuntime {
   }
 
   CreateSharedTypedArray(pointer: number, typeCode: number, arrayLength: number): JsValue {
-    let arrayData: SharedArrayData = { pointer, typeCode, length };
+    let arrayData: SharedArrayData = { pointer, typeCode, length:arrayLength };
     return this.createReference(JsTypes.SharedTypedArray, arrayData);
   }
 
   CreateTypedArray(arrayPtr: number, typeCode: number, arrayLength: number): JsValue {
-    let sharedArray = this.arrayBuilder(arrayPtr, typeCode, length);
+    let sharedArray = this.arrayBuilder(arrayPtr, typeCode, arrayLength);
     let ctr: any = sharedArray.constructor;
     let newArr: TypedArray = new ctr(sharedArray.length);
     newArr.set(sharedArray);
@@ -353,7 +357,10 @@ class RuntimeContext implements JsRuntime {
     let holder = this.referenceRegistry.get(value);
     if (!holder) return Undefined;
     let ref: any;
-    if (holder instanceof JsSpecialReference) ref = holder.weakRef?.deref();
+    if (holder instanceof JsSpecialReference) {
+      ref = holder.weakRef?.deref();
+      if(ref) this.weakRefFinalizer.unregister(ref);
+    }
     else ref = holder.reference;
 
     if (ref) {
@@ -372,12 +379,12 @@ class RuntimeContext implements JsRuntime {
 
   GetNumber(value: number, typeId: number): JsValue {
     let val = this.getValue(value, typeId);
-    return this.makeRefFrom(Number(val));
+    return {type: JsTypes.Number, value: Number(val)};
   }
 
   GetString(value: number, typeId: number): JsValue {
     let val = this.getValue(value, typeId);
-    return this.makeRefFrom(String(val));
+    return {type: JsTypes.Number, value: String(val)};
   }
 }
 

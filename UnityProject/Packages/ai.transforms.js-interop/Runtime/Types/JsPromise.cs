@@ -38,7 +38,7 @@ namespace JsInterop.Types
 
             void RejectAction(JsValue reference)
             {
-                tcs.TrySetException(new Exception($"Javascript Promise error: \n{reference}"));
+                tcs.SetException(new Exception($"Javascript Promise error: \n{reference}"));
                 CleanUp();
             }
 

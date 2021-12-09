@@ -68,10 +68,10 @@ namespace JsInterop.Internal
         internal static extern double CreateCallback(out int returnTypeId, double paramArrayRef);
 
         [DllImport("__Internal")]
-        internal static extern double CreateSharedTypedArray(out int returnTypeId, IntPtr arrayPtr, int typeCode, int arrayLength);
+        internal static extern double CreateSharedTypedArray(out int returnTypeId, int arrayPtr, int typeCode, int arrayLength);
 
         [DllImport("__Internal")]
-        internal static extern double CreateTypedArray(out int returnTypeId, IntPtr arrayPtr, int typeCode, int arrayLength);
+        internal static extern double CreateTypedArray(out int returnTypeId, int arrayPtr, int typeCode, int arrayLength);
 
         [DllImport("__Internal")]
         internal static extern double GarbageCollect(out int returnTypeId, double value, int typeId);

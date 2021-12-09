@@ -81,7 +81,11 @@ namespace JsInterop
             _jsHandle?.Free();
             _jsHandle = null;
         }
-
+        
+        // Implement type coersion
+        public static implicit operator bool(JsReference i) => i.TruthyValue;
+        public static explicit operator string(JsReference i) => i.ToString();
+        public static explicit operator double(JsReference i) => i.NumberValue;
 
     }
 }

@@ -1,5 +1,6 @@
 {
   "dependencies": {
+    "com.tools.webglthreadingpatcher": "https://github.com/transitional-forms-inc/WebGLThreadingPatcher.git",
     "com.unity.collab-proxy": "1.13.5",
     "com.unity.ide.visualstudio": "2.0.12",
     "com.unity.ide.vscode": "1.2.4",

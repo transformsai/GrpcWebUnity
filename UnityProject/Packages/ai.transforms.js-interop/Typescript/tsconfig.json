@@ -4,6 +4,7 @@
       "target": "ES6",
       "rootDir": "./",
       "outFile": "../Runtime/Internal/Runtime.jspre",
-      "strict": true
+      "strict": true,
+      "noFallthroughCasesInSwitch":true
   }
 }

@@ -54,7 +54,7 @@ namespace JsInterop.Editor
                     Builder.Append("var ret = ").AppendMethodForwarding("context", method).AppendLine(";");
                     WriteOutParam(paramList[0], "ret.type");
 
-                    if (method.ReturnType == typeof(string)) WriteStringReturn("ret.Value");
+                    if (method.ReturnType == typeof(string)) WriteStringReturn("ret.value");
                     else Builder.AppendLine("return ret.value;");
                 }
                 using (Catch("error"))

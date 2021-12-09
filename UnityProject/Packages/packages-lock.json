@@ -18,6 +18,15 @@
       "source": "embedded",
       "dependencies": {}
     },
+    "com.tools.webglthreadingpatcher": {
+      "version": "https://github.com/transitional-forms-inc/WebGLThreadingPatcher.git",
+      "depth": 0,
+      "source": "git",
+      "dependencies": {
+        "nuget.mono-cecil": "0.1.6-preview"
+      },
+      "hash": "b35b850487dbd9b8c84e7fc67930f336e921150f"
+    },
     "com.unity.collab-proxy": {
       "version": "1.13.5",
       "depth": 0,
@@ -95,6 +104,13 @@
         "com.unity.modules.ui": "1.0.0",
         "com.unity.modules.imgui": "1.0.0"
       }
+    },
+    "nuget.mono-cecil": {
+      "version": "0.1.6-preview",
+      "depth": 1,
+      "source": "registry",
+      "dependencies": {},
+      "url": "https://packages.unity.com"
     },
     "com.unity.modules.ai": {
       "version": "1.0.0",

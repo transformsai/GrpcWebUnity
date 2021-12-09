@@ -429,7 +429,7 @@ mergeInto(LibraryManager.library,{
       var context = Module['UnityJsInteropInstance'];
       var ret = context.GetString(value, typeId);;
       setValue(returnTypeId, ret.type, 'i32');
-      var returnStr  = ret.Value;
+      var returnStr  = ret.value;
       var bufferSize = lengthBytesUTF8(returnStr) + 1;
       var strBuffer = _malloc(bufferSize);
       stringToUTF8(returnStr, strBuffer, bufferSize);

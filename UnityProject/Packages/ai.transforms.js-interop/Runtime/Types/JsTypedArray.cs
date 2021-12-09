@@ -6,7 +6,7 @@ namespace JsInterop.Types
     public class JsTypedArray : JsObject
     {
 
-        private int? _length = 0;
+        private int? _length;
         public virtual int Length => _length ?? (_length = GetProp("length").As<int>()).Value;
 
         internal JsTypedArray(double refId, JsTypes typeId = JsTypes.TypedArray) : base(refId, typeId) { }
@@ -40,18 +40,18 @@ namespace JsInterop.Types
 
         public static TypedArrayTypeCode GetTypeCode(Array t)
         {
-            if (t is float[]) return TypedArrayTypeCode.Float32Array;
-            if (t is double[]) return TypedArrayTypeCode.Float64Array;
-            if (t is short[]) return TypedArrayTypeCode.Int16Array;
-            if (t is int[]) return TypedArrayTypeCode.Int32Array;
-            if (t is sbyte[]) return TypedArrayTypeCode.Int8Array;
-            if (t is ushort[]) return TypedArrayTypeCode.Uint16Array;
-            if (t is uint[]) return TypedArrayTypeCode.Uint32Array;
-            if (t is byte[]) return TypedArrayTypeCode.Uint8Array;
+            var type = t.GetType();
+            if (type == typeof(float[])) return TypedArrayTypeCode.Float32Array;
+            if (type == typeof(double[])) return TypedArrayTypeCode.Float64Array;
+            if (type == typeof(short[])) return TypedArrayTypeCode.Int16Array;
+            if (type == typeof(int[])) return TypedArrayTypeCode.Int32Array;
+            if (type == typeof(sbyte[])) return TypedArrayTypeCode.Int8Array;
+            if (type == typeof(ushort[])) return TypedArrayTypeCode.Uint16Array;
+            if (type == typeof(uint[])) return TypedArrayTypeCode.Uint32Array;
+            if (type == typeof(byte[])) return TypedArrayTypeCode.Uint8Array;
             throw new InvalidCastException("Unsupported TypedArray");
         }
-
-
+        
     }
 
 
