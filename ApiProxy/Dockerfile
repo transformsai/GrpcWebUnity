@@ -1,4 +1,4 @@
-FROM envoyproxy/envoy-alpine:v1.16-latest
+FROM envoyproxy/envoy-alpine:v1.20-latest
 
 # Required for envsubst
 RUN apk add gettext

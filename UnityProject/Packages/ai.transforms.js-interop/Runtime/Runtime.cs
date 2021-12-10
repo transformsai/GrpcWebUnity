@@ -36,7 +36,7 @@ namespace JsInterop
             if (JsString.TryGetString(str, out var jsString)) return jsString;
             var refId = Raw.CreateString(out var typeId, str);
             CheckException(refId, typeId);
-            if(JsReference.TryGetRef(refId,out var existing) && existing is JsString s) return s;
+            if (JsReference.TryGetRef(refId, out var existing) && existing is JsString s) return s;
             var jsStr = new JsString(refId, str);
             return jsStr;
         }
@@ -153,7 +153,7 @@ namespace JsInterop
             {
                 fixed (T* ptr = array)
                 {
-                    var refId = Raw.CreateSharedTypedArray(out var typeId, (int) ptr, array.TypeCode(), array.Length);
+                    var refId = Raw.CreateSharedTypedArray(out var typeId, (int)ptr, array.TypeCode(), array.Length);
                     CheckException(refId, typeId);
                     return new JsTypedArray(refId);
 
@@ -201,21 +201,14 @@ namespace JsInterop
                 default: throw new InvalidCastException($"Object cannot be converted to {nameof(JsValue)}");
             }
         }
-        public static SynchronizationContext SyncContext { get; set; }
-
         public static void Initialize()
         {
-            SyncContext = SynchronizationContext.Current;
-
-            UnityEngine.Debug.Log($"Initialize: {SynchronizationContext.Current}");
             Raw.Initialize(OnJsCallback, Acquire, Release);
         }
 
 
         private static bool Acquire(double refId)
         {
-            UnityEngine.Debug.Log($"Acquire: {SynchronizationContext.Current}");
-            SynchronizationContext.SetSynchronizationContext(SyncContext);
             if (!JsReference.TryGetRef(refId, out var reference))
             {
                 Debug.Fail("JS tried to acquire object that was not found or disposed");
@@ -227,8 +220,6 @@ namespace JsInterop
 
         private static bool Release(double refId)
         {
-            UnityEngine.Debug.Log($"Release: {SynchronizationContext.Current}");
-            SynchronizationContext.SetSynchronizationContext(SyncContext);
             if (!JsReference.TryGetRef(refId, out var reference))
             {
                 Debug.Fail("Reference was missing when trying to be released from JS");
@@ -241,9 +232,6 @@ namespace JsInterop
 
         private static (double value, int typeId) OnJsCallback(double callbackRefId, double value, int typeid, bool hasParamList)
         {
-            UnityEngine.Debug.Log($"OnJsCallback: {SynchronizationContext.Current}");
-            
-            SynchronizationContext.SetSynchronizationContext(SyncContext);
             var existingCallback = Receive(callbackRefId, (int)JsTypes.Callback).As<JsCallback>();
             var param = Receive(value, typeid);
 
