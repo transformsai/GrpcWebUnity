@@ -1,5 +1,7 @@
 {
   "dependencies": {
+    "ai.transforms.unity-grpc-web": "file:C:/Repos/UnityGrpcWeb",
+    "ai.transforms.unity-protobuf-serializer": "0.1.3",
     "com.unity.collab-proxy": "1.13.5",
     "com.unity.ide.visualstudio": "2.0.12",
     "com.unity.ide.vscode": "1.2.4",
@@ -46,7 +48,8 @@
       "name": "package.openupm.com",
       "url": "https://package.openupm.com",
       "scopes": [
-        "org.nuget"
+        "org.nuget",
+        "ai.transforms"
       ]
     }
   ]
