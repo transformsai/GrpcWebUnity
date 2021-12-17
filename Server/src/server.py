@@ -10,13 +10,14 @@ class TestService(TestServiceServicer):
     def Unary(self, request: Request, context: ServicerContext) -> Response:
         print("got Unary: " + request.data)
         return Response(
-            data="Hello Dante!" + request.data
+            data=f"Server Received: {request.data} \nUnary Response: Hello Dante!"
         )
 
     async def ServerStream(self, request: Request, context: ServicerContext) -> Generator[Response, None, None]:
         print("got Stream: " + request.data)
-        for i in range(0, 20):
+        max = 20
+        for i in range(0, max):
             yield Response(
-                data="request.data" + str(i)
+                data=f"Server Received: {request.data} \nStream Response: {str(i+1)} out of {max}"
             )
             await asyncio.sleep(3)

@@ -1,20 +1,27 @@
+using System;
 using System.Threading;
 using Ai.Transforms.Grpcwebunity;
-using TransformsAI.UnityGrpcWeb;
+using TransformsAI.Unity.Grpc.Web;
+using TransformsAI.Unity.Protobuf;
 using UnityEngine;
 
 public class Spinner : MonoBehaviour
 {
-    private int i = 0;
-    TestService.TestServiceClient client;
+    public int Counter;
+    private TestService.TestServiceClient _client;
+    public Proto<Request> Request;
+    private CancellationTokenSource _cts = new CancellationTokenSource();
 
     async void Awake()
     {
         var channel = UnityGrpcWeb.MakeChannel("http://localhost:8001");
-        client = new TestService.TestServiceClient(channel);
-        var call = client.ServerStream(new Request { Data = "cheem" });
+        _client = new TestService.TestServiceClient(channel);
+        var reqCopy = Request.Value.Clone();
+        reqCopy.Data += " Stream Input";
+        var call = _client.ServerStream(reqCopy);
         var stream = call.ResponseStream;
-        while (await stream.MoveNext(CancellationToken.None))
+
+        while (await stream.MoveNext(_cts.Token))
         {
             var item = stream.Current;
             Debug.Log("Stream: " + item.Data);
@@ -23,16 +30,23 @@ public class Spinner : MonoBehaviour
 
     private void Update()
     {
-        if (i++ % 200 == 0) PrintUnary();
+        if (Counter++ % 200 == 0) PrintUnary(Counter);
 
         transform.Rotate(Vector3.up, 1f);
     }
 
-    private async void PrintUnary()
+    private async void PrintUnary(int counter)
     {
-        using var call = client.UnaryAsync(new Request { Data = "Unary: " + i });
-        var response = await call.ResponseAsync.ConfigureAwait(continueOnCapturedContext: true);
-        Debug.Log(response.Data);
+        var reqCopy = Request.Value.Clone();
+        reqCopy.Data += $" {counter}";
+        using var call = _client.UnaryAsync(reqCopy, cancellationToken: _cts.Token);
+        var response = await call.ResponseAsync.ConfigureAwait(false);
+        Debug.Log($"{counter}:\n{response.Data}");
+    }
 
+    private void OnDestroy()
+    {
+        _cts?.Cancel();
+        _cts = null;
     }
 }

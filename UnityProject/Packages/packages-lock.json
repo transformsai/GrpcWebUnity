@@ -1,40 +1,50 @@
 {
   "dependencies": {
     "ai.transforms.js-interop": {
-      "version": "0.2.0",
+      "version": "0.3.0",
       "depth": 1,
       "source": "registry",
       "dependencies": {},
       "url": "https://package.openupm.com"
     },
     "ai.transforms.unity-grpc-web": {
-      "version": "file:C:/Repos/UnityGrpcWeb",
+      "version": "0.3.1",
       "depth": 0,
-      "source": "local",
+      "source": "registry",
       "dependencies": {
-        "ai.transforms.js-interop": "0.2.0",
-        "ai.transforms.webgl-http-handler": "0.2.0",
-        "ai.transforms.webgl-threading-fix": "0.2.0"
-      }
+        "ai.transforms.js-interop": "0.3.0",
+        "ai.transforms.webgl-http-handler": "0.3.0",
+        "ai.transforms.webgl-threading-fix": "0.3.0"
+      },
+      "url": "https://package.openupm.com"
     },
     "ai.transforms.unity-protobuf-serializer": {
-      "version": "0.1.3",
+      "version": "0.3.4",
       "depth": 0,
+      "source": "registry",
+      "dependencies": {
+        "ai.transforms.utilities": "0.3.2"
+      },
+      "url": "https://package.openupm.com"
+    },
+    "ai.transforms.utilities": {
+      "version": "0.3.2",
+      "depth": 1,
       "source": "registry",
       "dependencies": {},
       "url": "https://package.openupm.com"
     },
     "ai.transforms.webgl-http-handler": {
-      "version": "0.2.0",
+      "version": "0.3.0",
       "depth": 1,
       "source": "registry",
       "dependencies": {
-        "ai.transforms.js-interop": "0.2.0"
+        "ai.transforms.js-interop": "0.3.0"
       },
       "url": "https://package.openupm.com"
     },
     "ai.transforms.webgl-threading-fix": {
-      "version": "0.2.0",
+      "version": "0.3.0",
       "depth": 1,
       "source": "registry",
       "dependencies": {},
